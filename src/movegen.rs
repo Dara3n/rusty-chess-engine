@@ -24,7 +24,7 @@ const FLAG_PROMOTION_CAPTURE_KNIGHT: u16 = 12;
 
 
 
-const KNIGT_DIRS: [(i32, i32); 8]= [(1, 2), (2, 1), (-2, 1), (-1, 2), (1, -2), (2, -1), (-2, -1), (-1, -2)];
+const KNIGHT_DIRS: [(i32, i32); 8]= [(1, 2), (2, 1), (-2, 1), (-1, 2), (1, -2), (2, -1), (-2, -1), (-1, -2)];
 const ROOK_DIRS: [(i32, i32); 4]= [(1, 0), (-1, 0), (0, 1), (0, -1)];
 const BISHOP_DIRS: [(i32, i32); 4]= [(1, 1), (1, -1), (-1, 1), (-1, -1)];
 
@@ -114,7 +114,7 @@ impl Move {
     pub fn to_string(&self) -> String {
         let rank:u16 = self.get_to() / 8 + 1;
         let file:u16 = self.get_to() % 8;
-        return format!("{}{}", (b'a' + file as u8) as char, rank + 1) // a3, b7....
+        return format!("{}{}", (b'a' + file as u8) as char, rank) // a3, b7....
     }
 
 }
@@ -180,7 +180,7 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
             
             if rank == start_rank {
                 let double_to = from_u8 as i16 + 2 * direction;
-                if board.squares[double_to as usize]. is_none() {
+                if board.squares[double_to as usize].is_none() {
                     moves.push(Move::normal(from, double_to as u16));
                 }
             }
@@ -212,39 +212,32 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
 
 
 fn generate_one_rook_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
-    let direction = ROOK_DIRS;
-
-    generate_long_moves(board, from, moves, direction);
+    generate_long_moves(board, from, moves, &ROOK_DIRS);
 }
 
 
 fn generate_one_bishop_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
-    let direction = BISHOP_DIRS;
-
-    generate_long_moves(board, from, moves, direction);
+    generate_long_moves(board, from, moves, &BISHOP_DIRS);
 }
 
 
 fn generate_queen_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
-    let direction1 = ROOK_DIRS;
-    let direction2 = BISHOP_DIRS;
-
-    generate_long_moves(board, from, moves, direction1);
-    generate_long_moves(board, from, moves, direction2);
+    generate_long_moves(board, from, moves, &ROOK_DIRS);
+    generate_long_moves(board, from, moves, &BISHOP_DIRS);
 }
 
 
-fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: [(i32, i32); 4]) {
+fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: &[(i32, i32)]) {
     let from_u8 = from as u8;
     let rank:u8 = from_u8 / 8;
     let file:u8= from_u8 % 8;
-    for (vx, vy) in direction.iter() {
+    for &(vx, vy) in direction.iter() {
         let mut current_rank = rank as i8;
         let mut current_file = file as i8;
 
         loop {
-            current_file += *vx as i8;
-            current_rank += *vy as i8;
+            current_file += vx as i8;
+            current_rank += vy as i8;
             if current_file > 7 || current_file < 0 || current_rank > 7 || current_rank < 0 {
                 break;
             }
@@ -278,39 +271,27 @@ fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, directio
 
 
 fn generate_king_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
-    let direction1 = ROOK_DIRS;
-    let direction2 = BISHOP_DIRS;
-
-    generate_short_moves(board, from, moves, direction1);
-    generate_short_moves(board, from, moves, direction2);
+    generate_short_moves(board, from, moves, &BISHOP_DIRS);
+    generate_short_moves(board, from, moves, &ROOK_DIRS);
     generate_castles(board, from, moves);
 }
 
 fn generate_one_knight_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
-    let mut direction1: [(i32, i32); 4] = [(0, 0); 4];
-    let mut direction2: [(i32, i32); 4] = [(0, 0); 4];
-    for i in 0..8 {
-        if i / 4 == 0 {
-            direction1[i] = KNIGT_DIRS[i];
-        } else {
-            direction2[i] = KNIGT_DIRS[i + 4]
-        }
-    }
-    generate_short_moves(board, from, moves, direction1);
-    generate_short_moves(board, from, moves, direction2);
+    generate_short_moves(board, from, moves, &KNIGHT_DIRS[0..4]);
+    generate_short_moves(board, from, moves, &KNIGHT_DIRS[4..8]);
 
 }
 
-fn generate_short_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: [(i32, i32); 4]) {
+fn generate_short_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: &[(i32, i32)]) {
     let from_u8 = from as u8;
     let rank:u8 = from_u8 / 8;
     let file:u8= from_u8 % 8;
-    for (vx, vy) in direction.iter() {
+    for &(vx, vy) in direction.iter() {
         let mut current_rank = rank as i8;
         let mut current_file = file as i8;
                 
-        current_file += *vx as i8;
-        current_rank += *vy as i8;
+        current_file += vx as i8;
+        current_rank += vy as i8;
         if current_file > 7 || current_file < 0 || current_rank > 7 || current_rank < 0 {
             continue;
         }
@@ -339,21 +320,21 @@ fn generate_short_moves(board: &Board, from: u16, moves: &mut Vec<Move>, directi
 }
 
 fn generate_castles(board: &Board, from: u16, moves: &mut Vec<Move>) {
-    let castle_rights = board.castling_rights;
+    let castling_rights = board.castling_rights;
     if board.side_to_move == Color::White {
-        if board.castling_rights | 0b0111 == 0b1111 {
-            let to:u16 = 2;
+        if castling_rights & 0b1000 != 0 {
+            let to:u16 = 6;
             moves.push(Move::castle_kingside(from, to));
-        } if board.castling_rights | 0b1011 == 0b1111 {
+        } if castling_rights & 0b0100 != 0 {
             let to:u16 = 2;
             moves.push(Move::castle_queenside(from, to));
         }
     } else {
-        if board.castling_rights | 0b1101 == 0b1111 {
-            let to:u16 = 2;
+        if castling_rights & 0b0010 != 0 {
+            let to:u16 = 62;
             moves.push(Move::castle_kingside(from, to));
-        } if board.castling_rights | 0b1110 == 0b1111 {
-            let to:u16 = 2;
+        } if castling_rights & 0b0001 != 0 {
+            let to:u16 = 58;
             moves.push(Move::castle_queenside(from, to));
         }
     }
