@@ -1,3 +1,4 @@
+use crate::board;
 use crate::board::Board;
 use crate::board::Color;
 use crate::board::Piece;
@@ -21,6 +22,11 @@ const FLAG_PROMOTION_CAPTURE_ROOK: u16 = 10;
 const FLAG_PROMOTION_CAPTURE_BISHOP: u16 = 11;
 const FLAG_PROMOTION_CAPTURE_KNIGHT: u16 = 12;
 
+
+
+const KNIGT_DIRS: [(i32, i32); 8]= [(1, 2), (2, 1), (-2, 1), (-1, 2), (1, -2), (2, -1), (-2, -1), (-1, -2)];
+const ROOK_DIRS: [(i32, i32); 4]= [(1, 0), (-1, 0), (0, 1), (0, -1)];
+const BISHOP_DIRS: [(i32, i32); 4]= [(1, 1), (1, -1), (-1, 1), (-1, -1)];
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -74,11 +80,11 @@ impl Move {
     }
 
     pub fn get_to(&self) -> u16 {
-        self.data & TO_MASK 
+        (self.data & TO_MASK) >> 6 
     }
     
     pub fn get_flag(&self) -> u16 {
-        self.data & FLAG_MASK
+        (self.data & FLAG_MASK) >> 12
     }
 
     pub fn is_capture(&self) -> bool {
@@ -107,7 +113,7 @@ impl Move {
 
     pub fn to_string(&self) -> String {
         let rank:u16 = self.get_to() / 8 + 1;
-        let file:u16 = self.get_to() & 8;
+        let file:u16 = self.get_to() % 8;
         return format!("{}{}", (b'a' + file as u8) as char, rank + 1) // a3, b7....
     }
 
@@ -115,26 +121,44 @@ impl Move {
 pub fn generate_moves(board: &Board) -> Vec<Move> {
     let mut moves:Vec<Move> = Vec::new();
 
-    generate_pawn_moves(board, &mut moves);
-    generate_rook_moves(board, &mut moves);
-//    generate_knight_moves(board, &mut moves);
-//    generate_bishop_moves(board, &mut moves);
-//    generate_queen_moves(board, &mut moves);
-//    generate_king_moves(board, &mut moves);
+    generate_all_moves(board, &mut moves);
     
     moves
 }
 
-fn generate_pawn_moves(board: &Board, moves:&mut Vec<Move>) {
-    for square in 0..63 { 
+
+
+fn generate_all_moves(board: &Board, moves:&mut Vec<Move>) {
+    for square in 0..64 { 
         if let Some(Piece::Pawn(color)) = board.squares[square]{
             if color == board.side_to_move {
                 generate_one_pawn_moves(board, square as u16, moves)
+            }
+        } else if let Some(Piece::Rook(color)) = board.squares[square]{
+            if color == board.side_to_move {
+                generate_one_rook_moves(board, square as u16, moves)
+            }
+        }  else if let Some(Piece::Bishop(color)) = board.squares[square] {
+            if color == board.side_to_move {
+                generate_one_bishop_moves(board, square as u16, moves)
+            }
+        } else if let Some(Piece::Knight(color)) = board.squares[square] {
+            if color == board.side_to_move {
+                generate_one_knight_moves(board, square as u16, moves)
+            }
+        } else if let Some(Piece::Queen(color)) = board.squares[square] {
+            if color == board.side_to_move {
+                generate_queen_moves(board, square as u16, moves)
+            }
+        } else if let Some(Piece::King(color)) = board.squares[square] {
+            if color == board.side_to_move {
+                generate_king_moves(board, square as u16, moves)
             }
         }
         
     }
 }
+
 
 fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
     let (direction, start_rank, promote_rank) = match board.side_to_move {
@@ -157,7 +181,7 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
             if rank == start_rank {
                 let double_to = from_u8 as i16 + 2 * direction;
                 if board.squares[double_to as usize]. is_none() {
-                    moves.push(Move::normal(from, to as u16));
+                    moves.push(Move::normal(from, double_to as u16));
                 }
             }
         }
@@ -168,7 +192,7 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
             if let Some(piece) = &board.squares[to as usize] {
                 if matches!(piece, Piece::Bishop(c) | Piece::Knight(c) | Piece::Pawn(c) | 
                 Piece::Queen(c) | Piece::Rook(c) | Piece::King(c) if *c != board.side_to_move) {
-                    if rank == promote_rank {
+                    if rank == promote_rank - 1 {
                         for piece_type in 0..4 {
                             moves.push(Move::promotion(from, to as u16, piece_type, true));
                         }
@@ -187,22 +211,30 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
 }
 
 
-fn generate_rook_moves(board: &Board, moves:&mut Vec<Move>) {
-    for square in 0..63 { 
-        if let Some(Piece::Rook(color)) = board.squares[square]{
-            if color == board.side_to_move {
-                generate_one_rook_moves(board, square as u16, moves)
-            }
-        }
-        
-    }
+fn generate_one_rook_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
+    let direction = ROOK_DIRS;
+
+    generate_long_moves(board, from, moves, direction);
 }
 
-fn generate_one_rook_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
-    let direction = [(1, 0), (-1, 0), (0, 1), (0, -1)];
 
-    // abstract to another function ? this is all common behaviour for rook, bishop and queen
+fn generate_one_bishop_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
+    let direction = BISHOP_DIRS;
 
+    generate_long_moves(board, from, moves, direction);
+}
+
+
+fn generate_queen_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
+    let direction1 = ROOK_DIRS;
+    let direction2 = BISHOP_DIRS;
+
+    generate_long_moves(board, from, moves, direction1);
+    generate_long_moves(board, from, moves, direction2);
+}
+
+
+fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: [(i32, i32); 4]) {
     let from_u8 = from as u8;
     let rank:u8 = from_u8 / 8;
     let file:u8= from_u8 % 8;
@@ -211,8 +243,8 @@ fn generate_one_rook_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
         let mut current_file = file as i8;
 
         loop {
-            current_file += vx;
-            current_rank += vy;
+            current_file += *vx as i8;
+            current_rank += *vy as i8;
             if current_file > 7 || current_file < 0 || current_rank > 7 || current_rank < 0 {
                 break;
             }
@@ -239,6 +271,90 @@ fn generate_one_rook_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
                     break;
                 }
             }
+        }
+    }
+
+}
+
+
+fn generate_king_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
+    let direction1 = ROOK_DIRS;
+    let direction2 = BISHOP_DIRS;
+
+    generate_short_moves(board, from, moves, direction1);
+    generate_short_moves(board, from, moves, direction2);
+    generate_castles(board, from, moves);
+}
+
+fn generate_one_knight_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
+    let mut direction1: [(i32, i32); 4] = [(0, 0); 4];
+    let mut direction2: [(i32, i32); 4] = [(0, 0); 4];
+    for i in 0..8 {
+        if i / 4 == 0 {
+            direction1[i] = KNIGT_DIRS[i];
+        } else {
+            direction2[i] = KNIGT_DIRS[i + 4]
+        }
+    }
+    generate_short_moves(board, from, moves, direction1);
+    generate_short_moves(board, from, moves, direction2);
+
+}
+
+fn generate_short_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: [(i32, i32); 4]) {
+    let from_u8 = from as u8;
+    let rank:u8 = from_u8 / 8;
+    let file:u8= from_u8 % 8;
+    for (vx, vy) in direction.iter() {
+        let mut current_rank = rank as i8;
+        let mut current_file = file as i8;
+                
+        current_file += *vx as i8;
+        current_rank += *vy as i8;
+        if current_file > 7 || current_file < 0 || current_rank > 7 || current_rank < 0 {
+            continue;
+        }
+        let to = (current_rank * 8 + current_file) as u8;
+
+        match &board.squares[to as usize] {
+            None => {
+                // Empty square - add normal move
+                moves.push(Move::normal(from, to as u16));
+            },
+            Some(piece) => {
+                // Get the color of the piece
+                let piece_color = match piece {
+                    Piece::Pawn(c) | Piece::Knight(c) | Piece::Bishop(c) |
+                    Piece::Rook(c) | Piece::Queen(c) | Piece::King(c) => *c,
+                };
+                    
+                if piece_color != board.side_to_move {
+                    // capture an enemy piece
+                    moves.push(Move::capture(from, to as u16));
+                }
+            }
+        }                
+    }
+
+}
+
+fn generate_castles(board: &Board, from: u16, moves: &mut Vec<Move>) {
+    let castle_rights = board.castling_rights;
+    if board.side_to_move == Color::White {
+        if board.castling_rights | 0b0111 == 0b1111 {
+            let to:u16 = 2;
+            moves.push(Move::castle_kingside(from, to));
+        } if board.castling_rights | 0b1011 == 0b1111 {
+            let to:u16 = 2;
+            moves.push(Move::castle_queenside(from, to));
+        }
+    } else {
+        if board.castling_rights | 0b1101 == 0b1111 {
+            let to:u16 = 2;
+            moves.push(Move::castle_kingside(from, to));
+        } if board.castling_rights | 0b1110 == 0b1111 {
+            let to:u16 = 2;
+            moves.push(Move::castle_queenside(from, to));
         }
     }
 }
