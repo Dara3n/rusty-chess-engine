@@ -4,7 +4,9 @@ pub struct Board{
     pub castling_rights: u8, // no hay un tipo de datos de 4 bits
     pub en_passant_square: Option<u8>, // u8, = 2^8 = 255 posibilidades, necesitamos solo 64
     pub halfmove_clock: u32, // para la regla de los 50 movimientos
-    pub fullmove_number: u32 //para notación en general
+    pub fullmove_number: u32, //para notación en general
+    pub white_king:u8,
+    pub black_king: u8
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -36,7 +38,9 @@ impl Board{
             castling_rights,
             en_passant_square,
             halfmove_clock,
-            fullmove_number
+            fullmove_number,
+            black_king: 60, // initial squares of black and white kings
+            white_king: 4,
         };
         board.setup_initial_position();
         board
@@ -122,8 +126,8 @@ fn piece_to_char(piece: &Piece) -> char {
     }
 }
 
-pub fn init() -> Board {
+pub fn init(){
     let board = Board::new();
     board.print_board();
-    board
+    board;
 }

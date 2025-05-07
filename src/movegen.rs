@@ -53,7 +53,7 @@ impl Move {
         Self::new(from, to, FLAG_NORMAL)
     }
     
-    pub fn capture(from: u16, to: u16) -> Self {
+    pub fn capture(from: u16, to: u16, piece_captured:Piece /*does this make sense? */) -> Self {
         Self::new(from, to, FLAG_CAPTURE)
     }
     
@@ -140,35 +140,31 @@ pub fn generate_moves(board: &Board) -> Vec<Move> {
 }
 
 
-
-fn generate_all_moves(board: &Board, moves:&mut Vec<Move>) {
-    for square in 0..64 { 
-        if let Some(Piece::Pawn(color)) = board.squares[square]{
-            if color == board.side_to_move {
-                generate_one_pawn_moves(board, square as u16, moves)
-            }
-        } else if let Some(Piece::Rook(color)) = board.squares[square]{
-            if color == board.side_to_move {
-                generate_one_rook_moves(board, square as u16, moves)
-            }
-        }  else if let Some(Piece::Bishop(color)) = board.squares[square] {
-            if color == board.side_to_move {
-                generate_one_bishop_moves(board, square as u16, moves)
-            }
-        } else if let Some(Piece::Knight(color)) = board.squares[square] {
-            if color == board.side_to_move {
-                generate_one_knight_moves(board, square as u16, moves)
-            }
-        } else if let Some(Piece::Queen(color)) = board.squares[square] {
-            if color == board.side_to_move {
-                generate_queen_moves(board, square as u16, moves)
-            }
-        } else if let Some(Piece::King(color)) = board.squares[square] {
-            if color == board.side_to_move {
-                generate_king_moves(board, square as u16, moves)
+fn generate_all_moves(board: &Board, moves: &mut Vec<Move>) {
+    for square in 0..64 {
+        if let Some(piece) = board.squares[square] {
+            match piece {
+                Piece::Pawn(color) if color == board.side_to_move => {
+                    generate_one_pawn_moves(board, square as u16, moves)
+                }
+                Piece::Rook(color) if color == board.side_to_move => {
+                    generate_one_rook_moves(board, square as u16, moves)
+                }
+                Piece::Bishop(color) if color == board.side_to_move => {
+                    generate_one_bishop_moves(board, square as u16, moves)
+                }
+                Piece::Knight(color) if color == board.side_to_move => {
+                    generate_one_knight_moves(board, square as u16, moves)
+                }
+                Piece::Queen(color) if color == board.side_to_move => {
+                    generate_queen_moves(board, square as u16, moves)
+                }
+                Piece::King(color) if color == board.side_to_move => {
+                    generate_king_moves(board, square as u16, moves)
+                }
+                _ => {} 
             }
         }
-        
     }
 }
 
@@ -356,4 +352,8 @@ fn is_enemy(piece: Piece, side_to_move: Color) -> bool {
     } else {
         return false;
     }
+}
+
+fn is_square_attacked(board: Board, square: u16, side_to_move: Color) -> bool {
+    
 }
