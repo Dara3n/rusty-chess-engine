@@ -1,6 +1,7 @@
 pub mod board;
 pub mod movegen;
+pub mod movefilters;
 
 fn main() {
-    board::init();
+    movefilters::filter(movegen::generate_moves(board::init())); //maybe movegen::filter(...) ?
 }
