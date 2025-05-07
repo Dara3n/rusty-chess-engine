@@ -53,7 +53,7 @@ impl Move {
         Self::new(from, to, FLAG_NORMAL)
     }
     
-    pub fn capture(from: u16, to: u16, piece_captured:Piece /*does this make sense? */) -> Self {
+    pub fn capture(from: u16, to: u16) -> Self {
         Self::new(from, to, FLAG_CAPTURE)
     }
     
@@ -237,10 +237,11 @@ fn generate_queen_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
 }
 
 
-fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: &[(i32, i32)]) {
+fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: &[(i32, i32)]) -> Vec<Piece> {
     let from_u8 = from as u8;
     let rank:u8 = from_u8 / 8;
     let file:u8= from_u8 % 8;
+    let mut captures: Vec<&Piece> = Vec::new();
     for &(vx, vy) in direction.iter() {
         let mut current_rank = rank as i8;
         let mut current_file = file as i8;
@@ -262,6 +263,7 @@ fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, directio
                     if is_enemy(*piece, board.side_to_move) {
                         // capture an enemy piece
                         moves.push(Move::capture(from, to as u16));
+                        captures.push(piece);
                     }
                     
                     // We hit a piece, so stop exploring this direction
@@ -270,7 +272,7 @@ fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, directio
             }
         }
     }
-
+    return captures
 }
 
 
