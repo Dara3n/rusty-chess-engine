@@ -122,7 +122,8 @@ fn piece_to_char(piece: &Piece) -> char {
     }
 }
 
-pub fn init(){
+pub fn init() -> Board {
     let board = Board::new();
     board.print_board();
+    board
 }

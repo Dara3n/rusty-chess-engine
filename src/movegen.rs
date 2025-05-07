@@ -71,6 +71,7 @@ impl Move {
     
     pub fn promotion(from: u16, to: u16, piece_type: u16, is_capture: bool) -> Self {
         //Piece_type 0 = queen, 1 = rook, 2 = bishop, 3 = knight
+        assert!(piece_type < 4, "promotion type must be 0..3");
         let base_flag = if is_capture { FLAG_PROMOTION_CAPTURE_QUEEN } else { FLAG_PROMOTION_QUEEN };
         Self::new(from, to, base_flag + piece_type )
     }
@@ -108,6 +109,18 @@ impl Move {
             Some(flag - FLAG_PROMOTION_CAPTURE_QUEEN)
         } else {
             Some(flag - FLAG_PROMOTION_QUEEN)
+        }
+    }
+
+    pub fn get_move_type(&self) -> MoveType {
+        match self.get_flag() {
+            FLAG_NORMAL => MoveType::Normal,
+            FLAG_CAPTURE => MoveType::Capture,
+            FLAG_EP_CAPTURE => MoveType::EnPassant,
+            FLAG_CASTLE_KING | FLAG_CASTLE_QUEEN => MoveType::Castle,
+            f if (FLAG_PROMOTION_QUEEN..=FLAG_PROMOTION_KNIGHT).contains(&f) => MoveType::Promotion,
+            f if (FLAG_PROMOTION_CAPTURE_QUEEN..=FLAG_PROMOTION_CAPTURE_KNIGHT).contains(&f) => MoveType::PromotionCapture,
+            _ => unreachable!(),
         }
     }
 
@@ -186,25 +199,26 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
             }
         }
     }
+
     for capture_direction in [-1, 1] {
         let to = (from_u8 as i16 + direction + capture_direction) as u8;
-        if to < 64 {
-            if let Some(piece) = &board.squares[to as usize] {
-                if matches!(piece, Piece::Bishop(c) | Piece::Knight(c) | Piece::Pawn(c) | 
-                Piece::Queen(c) | Piece::Rook(c) | Piece::King(c) if *c != board.side_to_move) {
-                    if rank == promote_rank - 1 {
-                        for piece_type in 0..4 {
-                            moves.push(Move::promotion(from, to as u16, piece_type, true));
-                        }
-                    } else {
-                        moves.push(Move::capture(from, to as u16));
+        if to < 0 || to > 63 {
+            continue;
+        }
+        if let Some(piece) = &board.squares[to as usize] {
+            if is_enemy(*piece, board.side_to_move) {
+                if rank == promote_rank - 1 {
+                    for piece_type in 0..4 {
+                        moves.push(Move::promotion(from, to as u16, piece_type, true));
                     }
+                } else {
+                    moves.push(Move::capture(from, to as u16));
                 }
             }
-            if let Some(en_passant_square) = board.en_passant_square {
-                if to == en_passant_square {
-                    moves.push(Move::en_passant_capture(from, to as u16));
-                }
+        }
+        if let Some(en_passant_square) = board.en_passant_square {
+            if to == en_passant_square {
+                moves.push(Move::en_passant_capture(from, to as u16));
             }
         }
     }
@@ -249,14 +263,8 @@ fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, directio
                     moves.push(Move::normal(from, to as u16));
                 },
                 Some(piece) => {
-                    // Get the color of the piece
-                    let piece_color = match piece {
-                        Piece::Pawn(c) | Piece::Knight(c) | Piece::Bishop(c) |
-                        Piece::Rook(c) | Piece::Queen(c) | Piece::King(c) => *c,
-                    };
-                    
-                    if piece_color != board.side_to_move {
-                        // Enemy piece - add capture
+                    if is_enemy(*piece, board.side_to_move) {
+                        // capture an enemy piece
                         moves.push(Move::capture(from, to as u16));
                     }
                     
@@ -337,5 +345,15 @@ fn generate_castles(board: &Board, from: u16, moves: &mut Vec<Move>) {
             let to:u16 = 58;
             moves.push(Move::castle_queenside(from, to));
         }
+    }
+}
+
+fn is_enemy(piece: Piece, side_to_move: Color) -> bool {
+
+    if matches!(piece, Piece::Bishop(c) | Piece::Knight(c) | Piece::Pawn(c) | 
+    Piece::Queen(c) | Piece::Rook(c) | Piece::King(c) if c != side_to_move) {
+        return true;
+    } else {
+        return false;
     }
 }
