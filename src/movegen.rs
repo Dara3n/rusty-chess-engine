@@ -27,6 +27,8 @@ const FLAG_PROMOTION_CAPTURE_KNIGHT: u16 = 12;
 const KNIGHT_DIRS: [(i32, i32); 8]= [(1, 2), (2, 1), (-2, 1), (-1, 2), (1, -2), (2, -1), (-2, -1), (-1, -2)];
 const ROOK_DIRS: [(i32, i32); 4]= [(1, 0), (-1, 0), (0, 1), (0, -1)];
 const BISHOP_DIRS: [(i32, i32); 4]= [(1, 1), (1, -1), (-1, 1), (-1, -1)];
+const WHITE_PAWN_CAPTURES: [(i32, i32); 2]= [(1,1), (-1, 1)];
+const BLACK_PAWN_CAPTURES: [(i32, i32); 2]= [(-1,-1), (1, -1)];
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -127,7 +129,7 @@ impl Move {
     pub fn to_string(&self) -> String {
         let rank:u16 = self.get_to() / 8 + 1;
         let file:u16 = self.get_to() % 8;
-        return format!("{}{}", (b'a' + file as u8) as char, rank) // a3, b7....
+        format!("{}{}", (b'a' + file as u8) as char, rank) // a3, b7....
     }
 
 }
@@ -237,11 +239,10 @@ fn generate_queen_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
 }
 
 
-fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: &[(i32, i32)]) -> Vec<Piece> {
+fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, direction: &[(i32, i32)]) {
     let from_u8 = from as u8;
     let rank:u8 = from_u8 / 8;
     let file:u8= from_u8 % 8;
-    let mut captures: Vec<&Piece> = Vec::new();
     for &(vx, vy) in direction.iter() {
         let mut current_rank = rank as i8;
         let mut current_file = file as i8;
@@ -263,7 +264,6 @@ fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, directio
                     if is_enemy(*piece, board.side_to_move) {
                         // capture an enemy piece
                         moves.push(Move::capture(from, to as u16));
-                        captures.push(piece);
                     }
                     
                     // We hit a piece, so stop exploring this direction
@@ -272,7 +272,6 @@ fn generate_long_moves(board: &Board, from: u16, moves: &mut Vec<Move>, directio
             }
         }
     }
-    return captures
 }
 
 
@@ -283,8 +282,7 @@ fn generate_king_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
 }
 
 fn generate_one_knight_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
-    generate_short_moves(board, from, moves, &KNIGHT_DIRS[0..4]);
-    generate_short_moves(board, from, moves, &KNIGHT_DIRS[4..8]);
+    generate_short_moves(board, from, moves, &KNIGHT_DIRS[0..8]);
 
 }
 
@@ -322,7 +320,6 @@ fn generate_short_moves(board: &Board, from: u16, moves: &mut Vec<Move>, directi
             }
         }                
     }
-
 }
 
 fn generate_castles(board: &Board, from: u16, moves: &mut Vec<Move>) {
@@ -356,6 +353,94 @@ fn is_enemy(piece: Piece, side_to_move: Color) -> bool {
     }
 }
 
-fn is_square_attacked(board: Board, square: u16, side_to_move: Color) -> bool {
+
+pub fn is_square_attacked(board: &Board, square: u16) -> bool {
+    let attacker_color = match board.side_to_move {
+        Color::Black => Color::White,
+        Color::White => Color::Black,
+    };
     
+    let rank = (square / 8) as i8;
+    let file = (square % 8) as i8;
+    
+    // Check pawn attacks
+    let pawn_dirs = match attacker_color {
+        Color::White => WHITE_PAWN_CAPTURES,
+        Color::Black => BLACK_PAWN_CAPTURES,   
+    };
+    
+    for &(dx, dy) in &pawn_dirs {
+        let new_file = file + dx as i8;
+        let new_rank = rank + dy as i8;
+        
+        if new_file >= 0 && new_file < 8 && new_rank >= 0 && new_rank < 8 {
+            let from_square = (new_rank * 8 + new_file) as usize;
+            if let Some(Piece::Pawn(color)) = board.squares[from_square] {
+                if color == attacker_color {
+                    return true;
+                }
+            }
+        }
+    }
+    
+    // Check knight attacks
+    for &(dx, dy) in &KNIGHT_DIRS {
+        let new_file = file + dx as i8;
+        let new_rank = rank + dy as i8;
+        
+        if new_file >= 0 && new_file < 8 && new_rank >= 0 && new_rank < 8 {
+            let from_square = (new_rank * 8 + new_file) as usize;
+            if let Some(Piece::Knight(color)) = board.squares[from_square] {
+                if color == attacker_color {
+                    return true;
+                }
+            }
+        }
+    }
+    
+    // Check king attacks
+    for &(dx, dy) in BISHOP_DIRS.iter().chain(ROOK_DIRS.iter()) {
+        let new_file = file + dx as i8;
+        let new_rank = rank + dy as i8;
+        
+        if new_file >= 0 && new_file < 8 && new_rank >= 0 && new_rank < 8 {
+            let from_square = (new_rank * 8 + new_file) as usize;
+            if let Some(Piece::King(color)) = board.squares[from_square] {
+                if color == attacker_color {
+                    return true;
+                }
+            }
+        }
+    }
+    
+    // Check sliding pieces 
+    for &(dx, dy) in ROOK_DIRS.iter().chain(BISHOP_DIRS.iter()) {
+        let is_diagonal = dx != 0 && dy != 0;
+        let is_straight = dx == 0 || dy == 0;
+        
+        let mut new_file = file;
+        let mut new_rank = rank;
+        
+        loop {
+            new_file += dx as i8;
+            new_rank += dy as i8;
+            
+            if new_file < 0 || new_file >= 8 || new_rank < 0 || new_rank >= 8 {
+                break; 
+            }
+            
+            let from_square = (new_rank * 8 + new_file) as usize;
+            
+            if let Some(piece) = &board.squares[from_square] {
+                match piece {
+                    Piece::Queen(color) if *color == attacker_color => return true,
+                    Piece::Rook(color) if *color == attacker_color && is_straight => return true,
+                    Piece::Bishop(color) if *color == attacker_color && is_diagonal => return true,
+                    _ => break, 
+                }
+            }
+        }
+    }
+    
+    false
 }
