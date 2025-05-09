@@ -177,8 +177,8 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
         Color::Black => (-8, 6, 0),
     };
     let from_u8 = from as u8;
-    let rank:u8 = from_u8/8;
-    let file:u8= from_u8 %8; // probably will need to use this for en-passant? or we do that elsewere
+    let rank:u8 = from_u8 / 8;
+    let file:u8= from_u8 % 8; // probably will need to use this for en-passant? or we do that elsewere
 
     let to: u8 = (from as i16 + direction) as u8;
     if to < 64 && board.squares[to as usize].is_none() {

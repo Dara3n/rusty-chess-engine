@@ -5,9 +5,15 @@ pub struct Board{
     pub en_passant_square: Option<u8>, // u8, = 2^8 = 255 posibilidades, necesitamos solo 64
     pub halfmove_clock: u32, // para la regla de los 50 movimientos
     pub fullmove_number: u32, //para notación en general
-    pub white_king:u8,
+    pub white_king: u8,
     pub black_king: u8
 }
+
+pub const WHITE_KINGSIDE_CASTLING_RIGHTS: u8 = 0b1000;
+pub const WHITE_QUEENSIDE_CASTLING_RIGHTS: u8 = 0b0100;
+pub const BLACK_KINGSIDE_CASTLING_RIGHTS: u8 = 0b0010;
+pub const BLACK_QUEENSIDE_CASTLING_RIGHTS: u8 = 0b0001;
+
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Color{
@@ -98,10 +104,10 @@ impl Board{
         println!("Side to move: {}", if self.side_to_move == Color::White {"White"} else {"Black"});
 
         print!("Castling rights: ");
-        if self.castling_rights & 0b1000 != 0 { print!("K"); }
-        if self.castling_rights & 0b0100 != 0 { print!("Q"); }
-        if self.castling_rights & 0b0010 != 0 { print!("k"); }
-        if self.castling_rights & 0b0001 != 0 { print!("q"); }
+        if self.castling_rights & WHITE_KINGSIDE_CASTLING_RIGHTS != 0 { print!("K"); }
+        if self.castling_rights & WHITE_QUEENSIDE_CASTLING_RIGHTS != 0 { print!("Q"); }
+        if self.castling_rights & BLACK_KINGSIDE_CASTLING_RIGHTS != 0 { print!("k"); }
+        if self.castling_rights & BLACK_QUEENSIDE_CASTLING_RIGHTS != 0 { print!("q"); }
         if self.castling_rights == 0 { print!("-"); }
         println!();
         print!("Turn: {}", self.fullmove_number);
