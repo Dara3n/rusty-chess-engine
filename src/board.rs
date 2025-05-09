@@ -1,3 +1,5 @@
+use crate::movegen::{Move, MoveType};
+
 pub struct Board{
     pub squares: [Option<Piece>; 64],
     pub side_to_move: Color,
@@ -5,8 +7,8 @@ pub struct Board{
     pub en_passant_square: Option<u8>, // u8, = 2^8 = 255 posibilidades, necesitamos solo 64
     pub halfmove_clock: u32, // para la regla de los 50 movimientos
     pub fullmove_number: u32, //para notación en general
-    pub white_king: u8,
-    pub black_king: u8
+    pub white_king: u16,
+    pub black_king: u16
 }
 
 pub const WHITE_KINGSIDE_CASTLING_RIGHTS: u8 = 0b1000;
@@ -30,6 +32,34 @@ pub enum Piece{
     Queen(Color), 
     King(Color)
 }
+
+
+#[derive(Clone, Copy)]
+pub struct UndoInfo {
+    pub captured_piece: Option<Piece>,
+    pub en_passant_square: Option<u8>,
+    pub castling_rights: u8,
+    pub halfmove_clock: u32,
+    pub special_info: SpecialInfo,
+}
+
+#[derive(Clone, Copy)]
+pub enum SpecialInfo{
+    None, 
+
+    Castle {
+        rook_from: u16,
+        rook_to: u16
+    },
+
+    EnPassant {
+        en_passant_square: u16,
+    },
+    
+    Promotion
+
+}
+
 
 impl Board{
     pub fn new() -> Self{
@@ -112,6 +142,61 @@ impl Board{
         println!();
         print!("Turn: {}", self.fullmove_number);
     }
+
+    pub fn make_move(&mut self, m: Move) -> UndoInfo {
+        let mut undo_info = UndoInfo {
+            captured_piece: None,
+            en_passant_square: self.en_passant_square,
+            castling_rights: self.castling_rights,
+            halfmove_clock: self.halfmove_clock,
+            special_info: SpecialInfo::None
+
+        };
+
+        let from = m.get_from() as usize;
+        let to = m.get_to() as usize;
+        
+        if m.is_capture() {
+            if m.get_move_type() == MoveType::EnPassant {
+                let captured_pawn_square = match self.side_to_move {
+                    Color::White => to - 8,
+                    Color::Black => to + 8,
+                };
+                undo_info.captured_piece = self.squares[captured_pawn_square];
+                undo_info.special_info = SpecialInfo::EnPassant { en_passant_square: captured_pawn_square as u16 };
+                self.squares[captured_pawn_square] = None;
+            } else {
+                undo_info.captured_piece = self.squares[to];
+            }
+        }
+
+        if m.is_castle() { // this does NOT check for checks or pieces in the way !!!!
+            let (rook_from, rook_to) = match m.get_move_type() {
+                MoveType::CastleKingside => match self.side_to_move {
+                    Color::White => (7, 5),
+                    Color::Black => (63, 61),
+                },
+                MoveType::CastleQueenside => match self.side_to_move {
+                    Color::White => (0, 3),
+                    Color::Black => (57, 59),
+                }, 
+                _ => unreachable!()
+            };
+
+            undo_info.special_info = SpecialInfo::Castle { rook_from: rook_from, rook_to: rook_to };
+        }
+
+        if m.is_promotion() {
+
+        }
+    
+
+        undo_info
+    }
+
+    pub fn unmake_move(&mut self, m: Move, undo: UndoInfo) {
+
+    }
 }
 
 fn piece_to_char(piece: &Piece) -> char {
@@ -132,8 +217,8 @@ fn piece_to_char(piece: &Piece) -> char {
     }
 }
 
-pub fn init(){
+pub fn init() -> Board {
     let board = Board::new();
     board.print_board();
-    board;
+    board
 }

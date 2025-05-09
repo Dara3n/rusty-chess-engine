@@ -36,11 +36,14 @@ pub struct Move {
     data: u16, // 6 bits from, 6 bits to, 4 bits special flags (castling, en-passant, check, promotion, piece to promote to)
 }
 
+
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum MoveType {
     Normal,
     Capture,
     EnPassant,
-    Castle,
+    CastleKingside,
+    CastleQueenside,
     Promotion,
     PromotionCapture,
 }
@@ -100,6 +103,11 @@ impl Move {
         let flag:u16 = self.get_flag();
         flag >= FLAG_PROMOTION_QUEEN && flag <= FLAG_PROMOTION_KNIGHT
     }
+
+    pub fn is_castle(&self) -> bool {
+        let flag:u16 = self.get_flag();
+        flag == FLAG_CASTLE_KING || flag == FLAG_CASTLE_QUEEN
+    }
     
     pub fn promotion_piece(&self) -> Option<u16> {
         if !self.is_promotion() {
@@ -119,7 +127,8 @@ impl Move {
             FLAG_NORMAL => MoveType::Normal,
             FLAG_CAPTURE => MoveType::Capture,
             FLAG_EP_CAPTURE => MoveType::EnPassant,
-            FLAG_CASTLE_KING | FLAG_CASTLE_QUEEN => MoveType::Castle,
+            FLAG_CASTLE_KING => MoveType::CastleKingside,
+            FLAG_CASTLE_QUEEN => MoveType::CastleQueenside,
             f if (FLAG_PROMOTION_QUEEN..=FLAG_PROMOTION_KNIGHT).contains(&f) => MoveType::Promotion,
             f if (FLAG_PROMOTION_CAPTURE_QUEEN..=FLAG_PROMOTION_CAPTURE_KNIGHT).contains(&f) => MoveType::PromotionCapture,
             _ => unreachable!(),
@@ -177,8 +186,8 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
         Color::Black => (-8, 6, 0),
     };
     let from_u8 = from as u8;
-    let rank:u8 = from_u8 / 8;
-    let file:u8= from_u8 % 8; // probably will need to use this for en-passant? or we do that elsewere
+    let rank:u8 = from_u8/8;
+    let file:u8= from_u8 %8; // probably will need to use this for en-passant? or we do that elsewere
 
     let to: u8 = (from as i16 + direction) as u8;
     if to < 64 && board.squares[to as usize].is_none() {
