@@ -155,6 +155,10 @@ impl Board{
 
         let from = m.get_from() as usize;
         let to = m.get_to() as usize;
+
+        if self.squares[from] == Some(Piece::Pawn(self.side_to_move)) {
+            self.halfmove_clock = 0;
+        }
         
         if m.is_capture() {
             if m.get_move_type() == MoveType::EnPassant {
@@ -165,14 +169,17 @@ impl Board{
                 undo_info.captured_piece = self.squares[captured_pawn_square];
                 undo_info.special_info = SpecialInfo::EnPassant { en_passant_square: captured_pawn_square as u16 };
                 self.squares[captured_pawn_square] = None;
+                self.squares[to] = self.squares[from];
                 self.squares[from] = None;
-                self.squares[to] = Some(Piece::Pawn(self.side_to_move))
             } else {
                 undo_info.captured_piece = self.squares[to];
-            }
-        }
+                self.squares[to] = self.squares[from];
+                self.squares[from] = None;
 
-        if m.is_castle() { // this does NOT check for checks or pieces in the way !!! (movefilter does)
+            }
+            self.halfmove_clock = 0;
+
+        } else if m.is_castle() { // this does NOT check for checks or pieces in the way !!! (movefilter does)
             let (rook_from, rook_to) = match m.get_move_type() {
                 MoveType::CastleKingside => match self.side_to_move {
                     Color::White => (7, 5),
@@ -192,11 +199,42 @@ impl Board{
             self.squares[rook_from as usize] = None;
             self.squares[rook_to as usize] = Some(Piece::Rook(self.side_to_move));
 
+        } else {
+            self.squares[to] = self.squares[from];
+            self.squares[from] = None;
+            
         }
 
         if m.is_promotion() {
+            let promotion_piece = match m.promotion_piece() {
+                Some(0) => Piece::Queen(self.side_to_move),
+                Some(1) => Piece::Rook(self.side_to_move),
+                Some(2) => Piece::Bishop(self.side_to_move),
+                Some(3) => Piece::Knight(self.side_to_move),
+                _ => unreachable!()
 
+            
+            };
+            undo_info.special_info = SpecialInfo::Promotion;
+
+            self.squares[from] = None;
+            self.squares[to] = Some(promotion_piece);
+            self.halfmove_clock = 0;
+
+        } else if self.squares[from] == Some(Piece::Pawn(self.side_to_move)) {
+            if (from as i32 - to as i32).abs() == 16 {
+                let ep_square = match self.side_to_move {
+                    Color::White => from + 8,
+                    Color::Black => from - 8,
+                };
+                self.en_passant_square = Some(ep_square as u8);
+            }
+            self.halfmove_clock = 0;
+        } else {
+            self.halfmove_clock += 1;
         }
+
+        // update castling rights, update fullmove clock and change side_to_move elsewhere seems better        
 
         undo_info
     }

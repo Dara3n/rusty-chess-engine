@@ -101,7 +101,7 @@ impl Move {
 
     pub fn is_promotion(&self) -> bool {
         let flag:u16 = self.get_flag();
-        flag >= FLAG_PROMOTION_QUEEN && flag <= FLAG_PROMOTION_KNIGHT
+        flag >= FLAG_PROMOTION_QUEEN && flag <= FLAG_PROMOTION_CAPTURE_KNIGHT
     }
 
     pub fn is_castle(&self) -> bool {
