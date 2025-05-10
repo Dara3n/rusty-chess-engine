@@ -49,7 +49,7 @@ pub enum SpecialInfo{
 
     Castle {
         rook_from: u16,
-        rook_to: u16
+        rook_to: u16,
     },
 
     EnPassant {
@@ -165,12 +165,14 @@ impl Board{
                 undo_info.captured_piece = self.squares[captured_pawn_square];
                 undo_info.special_info = SpecialInfo::EnPassant { en_passant_square: captured_pawn_square as u16 };
                 self.squares[captured_pawn_square] = None;
+                self.squares[from] = None;
+                self.squares[to] = Some(Piece::Pawn(self.side_to_move))
             } else {
                 undo_info.captured_piece = self.squares[to];
             }
         }
 
-        if m.is_castle() { // this does NOT check for checks or pieces in the way !!!!
+        if m.is_castle() { // this does NOT check for checks or pieces in the way !!! (movefilter does)
             let (rook_from, rook_to) = match m.get_move_type() {
                 MoveType::CastleKingside => match self.side_to_move {
                     Color::White => (7, 5),
@@ -184,12 +186,17 @@ impl Board{
             };
 
             undo_info.special_info = SpecialInfo::Castle { rook_from: rook_from, rook_to: rook_to };
+
+            self.squares[from] = None;
+            self.squares[to] = Some(Piece::King(self.side_to_move));
+            self.squares[rook_from as usize] = None;
+            self.squares[rook_to as usize] = Some(Piece::Rook(self.side_to_move));
+
         }
 
         if m.is_promotion() {
 
         }
-    
 
         undo_info
     }
