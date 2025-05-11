@@ -4,7 +4,6 @@ use crate::board::Color;
 use crate::movegen::is_square_attacked;
 use crate::movegen::Move;
 use crate::board::UndoInfo;
-use crate::movegen::MoveType;
 
 
 pub fn filter(board: &mut Board, moves: Vec<Move>) -> Vec<Move> {
@@ -21,28 +20,27 @@ pub fn filter(board: &mut Board, moves: Vec<Move>) -> Vec<Move> {
         };
 
         if movement.is_castle() {
-            match movement.get_move_type() {
-                MoveType::CastleKingside => if !is_square_attacked(board, old_king_position) && 
-                !is_square_attacked(board, old_king_position + 1) &&
-                board.squares[(old_king_position + 1) as usize].is_none() &&
-                !is_square_attacked(board, old_king_position + 2) &&
-                board.squares[(old_king_position + 2) as usize].is_none() {
-                    valid_moves.push(movement); // you castle if you have castling rights (checked in movegen) if the king is not attacked, if the two squares between king and rook are not attacked and empty
-                },
-                    
-                MoveType::CastleQueenside => if !is_square_attacked(board, old_king_position) && 
-                !is_square_attacked(board, old_king_position - 1) &&
-                board.squares[(old_king_position - 1) as usize].is_none() &&
-                !is_square_attacked(board, old_king_position - 2) &&
-                board.squares[(old_king_position - 2) as usize].is_none() &&
-                !is_square_attacked(board, old_king_position - 3) && 
-                board.squares[(old_king_position - 3) as usize].is_none() {
-                    valid_moves.push(movement);
-                },
-
-                _ => unreachable!()
+            if movement.is_castle_kingside() &&
+            !is_square_attacked(board, old_king_position) && 
+            !is_square_attacked(board, old_king_position + 1) &&
+            board.squares[(old_king_position + 1) as usize].is_none() &&
+            !is_square_attacked(board, old_king_position + 2) &&
+            board.squares[(old_king_position + 2) as usize].is_none() {
+                valid_moves.push(movement); // you castle if you have castling rights (checked in movegen) if the king is not attacked, if the two squares between king and rook are not attacked and empty
+            }
+                
+            if movement.is_castle_queenside() && 
+            !is_square_attacked(board, old_king_position) && 
+            !is_square_attacked(board, old_king_position - 1) &&
+            board.squares[(old_king_position - 1) as usize].is_none() &&
+            !is_square_attacked(board, old_king_position - 2) &&
+            board.squares[(old_king_position - 2) as usize].is_none() &&
+            !is_square_attacked(board, old_king_position - 3) && 
+            board.squares[(old_king_position - 3) as usize].is_none() {
+                valid_moves.push(movement);
             }
             continue;
+        
         }
         let undo_info = board.make_move(movement);
 

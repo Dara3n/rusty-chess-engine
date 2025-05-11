@@ -1,4 +1,4 @@
-use crate::movegen::{Move, MoveType};
+use crate::movegen::Move;
 
 pub struct Board{
     pub squares: [Option<Piece>; 64],
@@ -11,6 +11,7 @@ pub struct Board{
     pub black_king: u16
 }
 
+
 pub const WHITE_KINGSIDE_CASTLING_RIGHTS: u8 = 0b1000;
 pub const WHITE_QUEENSIDE_CASTLING_RIGHTS: u8 = 0b0100;
 pub const BLACK_KINGSIDE_CASTLING_RIGHTS: u8 = 0b0010;
@@ -22,6 +23,7 @@ pub enum Color{
     Black,
     White
 }
+
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Piece{
@@ -42,6 +44,7 @@ pub struct UndoInfo {
     pub halfmove_clock: u32,
     pub special_info: SpecialInfo,
 }
+
 
 #[derive(Clone, Copy)]
 pub enum SpecialInfo{
@@ -161,7 +164,7 @@ impl Board{
         }
         
         if m.is_capture() {
-            if m.get_move_type() == MoveType::EnPassant {
+            if m.is_en_passant() {
                 let captured_pawn_square = match self.side_to_move {
                     Color::White => to - 8,
                     Color::Black => to + 8,
@@ -179,18 +182,22 @@ impl Board{
             }
             self.halfmove_clock = 0;
 
-        } else if m.is_castle() { // this does NOT check for checks or pieces in the way !!! (movefilter does)
-            let (rook_from, rook_to) = match m.get_move_type() {
-                MoveType::CastleKingside => match self.side_to_move {
+        } else if m.is_castle() {
+            let (rook_from, rook_to):(u16, u16); 
+
+            if m.is_castle_kingside() { 
+                (rook_from, rook_to) = match self.side_to_move {
                     Color::White => (7, 5),
                     Color::Black => (63, 61),
-                },
-                MoveType::CastleQueenside => match self.side_to_move {
+                };
+
+            } else {
+                (rook_from, rook_to) = match self.side_to_move {
                     Color::White => (0, 3),
                     Color::Black => (57, 59),
-                }, 
-                _ => unreachable!()
-            };
+                };
+                 
+            }
 
             undo_info.special_info = SpecialInfo::Castle { rook_from: rook_from, rook_to: rook_to };
 
@@ -200,6 +207,7 @@ impl Board{
             self.squares[rook_to as usize] = Some(Piece::Rook(self.side_to_move));
 
         } else {
+            
             self.squares[to] = self.squares[from];
             self.squares[from] = None;
             
@@ -234,14 +242,70 @@ impl Board{
             self.halfmove_clock += 1;
         }
 
-        // update castling rights, update fullmove clock and change side_to_move elsewhere seems better        
-
+        self.update_castling_rights(from, to);
+        // increase move counter and change side_to_move could be elsewhere?
         undo_info
     }
 
     pub fn unmake_move(&mut self, m: Move, undo: UndoInfo) {
+        let from = m.get_from() as usize;
+        let to = m.get_to() as usize;
+        self.castling_rights = undo.castling_rights;
+        self.en_passant_square = undo.en_passant_square;
+        self.halfmove_clock = undo.halfmove_clock;
+
+        match undo.special_info {
+            SpecialInfo::EnPassant { en_passant_square } => {
+                self.squares[from] = self.squares[to];
+                self.squares[to] = None;
+                self.squares[en_passant_square as usize] = undo.captured_piece;
+            },
+            SpecialInfo::Castle { rook_from, rook_to } => {
+                self.squares[from] = self.squares[to];
+                self.squares[to] = None;
+                self.squares[rook_from as usize] = self.squares[rook_to as usize];
+                self.squares[rook_to as usize] = None;
+            }, 
+            SpecialInfo::Promotion => {
+                self.squares[from] = Some(Piece::Pawn(self.side_to_move));
+                self.squares[to] = undo.captured_piece;
+            },
+            SpecialInfo::None => {
+                self.squares[from] = self.squares[to];
+                self.squares[to] = undo.captured_piece;
+            }
+        }
 
     }
+
+    pub fn update_castling_rights(&mut self, from:usize, to:usize) {
+        if self.castling_rights == 0 {
+            return;
+        }
+
+        if let Some(Piece::King(color)) = self.squares[to] {
+            match color {
+                Color::Black => self.castling_rights & !BLACK_QUEENSIDE_CASTLING_RIGHTS
+                & !BLACK_KINGSIDE_CASTLING_RIGHTS, 
+                Color::White => self.castling_rights & !WHITE_QUEENSIDE_CASTLING_RIGHTS
+                & !WHITE_KINGSIDE_CASTLING_RIGHTS,
+            };
+        }
+        let check_rook_square = |sq:usize| {
+            match sq {
+                0 => self.castling_rights & !WHITE_QUEENSIDE_CASTLING_RIGHTS,
+                7 => self.castling_rights & !WHITE_KINGSIDE_CASTLING_RIGHTS,
+                56 => self.castling_rights & !BLACK_QUEENSIDE_CASTLING_RIGHTS,
+                63 => self.castling_rights & !BLACK_KINGSIDE_CASTLING_RIGHTS,
+                _ => unreachable!()
+            }
+
+        };
+
+        check_rook_square(from);
+        check_rook_square(to);
+    }
+
 }
 
 fn piece_to_char(piece: &Piece) -> char {

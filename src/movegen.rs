@@ -38,7 +38,7 @@ pub struct Move {
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum MoveType {
+enum MoveType {
     Normal,
     Capture,
     EnPassant,
@@ -99,16 +99,28 @@ impl Move {
         (flag >= FLAG_PROMOTION_CAPTURE_QUEEN && flag <= FLAG_PROMOTION_CAPTURE_KNIGHT)
     }
 
+    pub fn is_en_passant(&self) -> bool {
+        self.get_flag() == FLAG_EP_CAPTURE
+    }
+
     pub fn is_promotion(&self) -> bool {
         let flag:u16 = self.get_flag();
         flag >= FLAG_PROMOTION_QUEEN && flag <= FLAG_PROMOTION_CAPTURE_KNIGHT
     }
 
-    pub fn is_castle(&self) -> bool {
+    pub fn is_castle_kingside(&self) -> bool {
         let flag:u16 = self.get_flag();
-        flag == FLAG_CASTLE_KING || flag == FLAG_CASTLE_QUEEN
+        flag == FLAG_CASTLE_KING 
     }
     
+    pub fn is_castle_queenside(&self) -> bool {
+        let flag:u16 = self.get_flag();
+        flag == FLAG_CASTLE_QUEEN 
+    }
+    
+    pub fn is_castle(&self) -> bool {
+        self.is_castle_kingside() || self.is_castle_queenside()
+    }
     pub fn promotion_piece(&self) -> Option<u16> {
         if !self.is_promotion() {
             return None;
