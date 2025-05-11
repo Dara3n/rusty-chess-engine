@@ -159,6 +159,8 @@ impl Board{
         let from = m.get_from() as usize;
         let to = m.get_to() as usize;
         
+        self.en_passant_square = None;
+        
         if m.is_capture() {
             if m.is_en_passant() {
                 let captured_pawn_square = match self.side_to_move {
