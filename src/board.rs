@@ -158,10 +158,6 @@ impl Board{
 
         let from = m.get_from() as usize;
         let to = m.get_to() as usize;
-
-        if self.squares[from] == Some(Piece::Pawn(self.side_to_move)) {
-            self.halfmove_clock = 0;
-        }
         
         if m.is_capture() {
             if m.is_en_passant() {
@@ -285,18 +281,18 @@ impl Board{
 
         if let Some(Piece::King(color)) = self.squares[to] {
             match color {
-                Color::Black => self.castling_rights & !BLACK_QUEENSIDE_CASTLING_RIGHTS
+                Color::Black => self.castling_rights &= !BLACK_QUEENSIDE_CASTLING_RIGHTS
                 & !BLACK_KINGSIDE_CASTLING_RIGHTS, 
-                Color::White => self.castling_rights & !WHITE_QUEENSIDE_CASTLING_RIGHTS
+                Color::White => self.castling_rights &= !WHITE_QUEENSIDE_CASTLING_RIGHTS
                 & !WHITE_KINGSIDE_CASTLING_RIGHTS,
             };
         }
-        let check_rook_square = |sq:usize| {
+        let mut check_rook_square = |sq:usize| {
             match sq {
-                0 => self.castling_rights & !WHITE_QUEENSIDE_CASTLING_RIGHTS,
-                7 => self.castling_rights & !WHITE_KINGSIDE_CASTLING_RIGHTS,
-                56 => self.castling_rights & !BLACK_QUEENSIDE_CASTLING_RIGHTS,
-                63 => self.castling_rights & !BLACK_KINGSIDE_CASTLING_RIGHTS,
+                0 => self.castling_rights &= !WHITE_QUEENSIDE_CASTLING_RIGHTS,
+                7 => self.castling_rights &= !WHITE_KINGSIDE_CASTLING_RIGHTS,
+                56 => self.castling_rights &= !BLACK_QUEENSIDE_CASTLING_RIGHTS,
+                63 => self.castling_rights &= !BLACK_KINGSIDE_CASTLING_RIGHTS,
                 _ => unreachable!()
             }
 
