@@ -120,7 +120,7 @@ impl Board{
         println!("  +-----------------+");
         for rank in (0..8).rev(){
             print!("{} | ", rank + 1); 
-            for file in (0..8).rev(){
+            for file in 0..8 {
                 let index = rank * 8 + file;
                 let square = &self.squares[index];
 
@@ -143,7 +143,7 @@ impl Board{
         if self.castling_rights & BLACK_QUEENSIDE_CASTLING_RIGHTS != 0 { print!("q"); }
         if self.castling_rights == 0 { print!("-"); }
         println!();
-        print!("Turn: {}", self.fullmove_number);
+        println!("Turn: {}", self.fullmove_number);
     }
 
     pub fn make_move(&mut self, m: Move) -> UndoInfo {
@@ -203,6 +203,8 @@ impl Board{
             self.squares[to] = Some(Piece::King(self.side_to_move));
             self.squares[rook_from as usize] = None;
             self.squares[rook_to as usize] = Some(Piece::Rook(self.side_to_move));
+            
+            self.update_castling_rights(from, to);
 
         } else {
             
@@ -240,7 +242,6 @@ impl Board{
             self.halfmove_clock += 1;
         }
 
-        self.update_castling_rights(from, to);
         // increase move counter and change side_to_move could be elsewhere?
         undo_info
     }
@@ -263,6 +264,14 @@ impl Board{
                 self.squares[to] = None;
                 self.squares[rook_from as usize] = self.squares[rook_to as usize];
                 self.squares[rook_to as usize] = None;
+                match rook_from {
+                    0 => self.castling_rights |= !WHITE_QUEENSIDE_CASTLING_RIGHTS,
+                    7 => self.castling_rights |= !WHITE_KINGSIDE_CASTLING_RIGHTS,
+                    56 => self.castling_rights |= !BLACK_QUEENSIDE_CASTLING_RIGHTS,
+                    63 => self.castling_rights |= !BLACK_KINGSIDE_CASTLING_RIGHTS,
+                    _ => unreachable!()
+                }
+                
             }, 
             SpecialInfo::Promotion => {
                 self.squares[from] = Some(Piece::Pawn(self.side_to_move));
