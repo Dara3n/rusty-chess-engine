@@ -203,7 +203,7 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
 
     let to: u8 = (from as i16 + direction) as u8;
     if to < 64 && board.squares[to as usize].is_none() {
-        if rank == promote_rank - 1 {
+        if rank as i16 == promote_rank - direction/8 {
             for i in 0..4{
                 moves.push(Move::promotion(from, to as u16, i, false))
             }
@@ -221,12 +221,12 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
 
     for capture_direction in [-1, 1] {
         let to = (from_u8 as i16 + direction + capture_direction) as u8;
-        if to < 0 || to > 63 {
+        if to > 63 {
             continue;
         }
         if let Some(piece) = &board.squares[to as usize] {
             if is_enemy(*piece, board.side_to_move) {
-                if rank == promote_rank - 1 {
+                if rank as i16 == promote_rank - direction/8 {
                     for piece_type in 0..4 {
                         moves.push(Move::promotion(from, to as u16, piece_type, true));
                     }
@@ -348,18 +348,26 @@ fn generate_castles(board: &Board, from: u16, moves: &mut Vec<Move>) {
     if board.side_to_move == Color::White {
         if castling_rights & 0b1000 != 0 {
             let to:u16 = 6;
-            moves.push(Move::castle_kingside(from, to));
+            if board.squares[to as usize] == Some(Piece::Rook(board.side_to_move)) {
+                moves.push(Move::castle_kingside(from, to));
+            }
         } if castling_rights & 0b0100 != 0 {
             let to:u16 = 2;
-            moves.push(Move::castle_queenside(from, to));
+            if board.squares[to as usize] == Some(Piece::Rook(board.side_to_move)) {
+                moves.push(Move::castle_queenside(from, to));
+            }
         }
     } else {
         if castling_rights & 0b0010 != 0 {
             let to:u16 = 62;
-            moves.push(Move::castle_kingside(from, to));
+            if board.squares[to as usize] == Some(Piece::Rook(board.side_to_move)) {
+                moves.push(Move::castle_kingside(from, to));
+            }
         } if castling_rights & 0b0001 != 0 {
             let to:u16 = 58;
-            moves.push(Move::castle_queenside(from, to));
+            if board.squares[to as usize] == Some(Piece::Rook(board.side_to_move)) {
+                moves.push(Move::castle_queenside(from, to));
+            }
         }
     }
 }

@@ -24,6 +24,15 @@ pub enum Color{
     White
 }
 
+impl Color {
+    pub fn opposite(self) -> Self {
+        match self {
+            Color::Black => Color::White,
+            Color::White => Color::Black
+        }
+    }
+}
+
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Piece{
@@ -70,7 +79,7 @@ impl Board{
         let castling_rights = 0b1111;
         let en_passant_square = None;
         let halfmove_clock = 0;
-        let fullmove_number = 1;
+        let fullmove_number = 0;
         let mut board = Board{
             squares, 
             side_to_move: Color::White,
@@ -174,6 +183,7 @@ impl Board{
                 self.squares[from] = None;
             } else {
                 undo_info.captured_piece = self.squares[to];
+
                 self.squares[to] = self.squares[from];
                 self.squares[from] = None;
 
@@ -199,12 +209,13 @@ impl Board{
 
             undo_info.special_info = SpecialInfo::Castle { rook_from: rook_from, rook_to: rook_to };
 
+            self.update_castling_rights(from, rook_from as usize);
+
             self.squares[from] = None;
             self.squares[to] = Some(Piece::King(self.side_to_move));
             self.squares[rook_from as usize] = None;
             self.squares[rook_to as usize] = Some(Piece::Rook(self.side_to_move));
             
-            self.update_castling_rights(from, to);
 
         } else {
             
@@ -265,10 +276,10 @@ impl Board{
                 self.squares[rook_from as usize] = self.squares[rook_to as usize];
                 self.squares[rook_to as usize] = None;
                 match rook_from {
-                    0 => self.castling_rights |= !WHITE_QUEENSIDE_CASTLING_RIGHTS,
-                    7 => self.castling_rights |= !WHITE_KINGSIDE_CASTLING_RIGHTS,
-                    56 => self.castling_rights |= !BLACK_QUEENSIDE_CASTLING_RIGHTS,
-                    63 => self.castling_rights |= !BLACK_KINGSIDE_CASTLING_RIGHTS,
+                    0 => self.castling_rights |= WHITE_QUEENSIDE_CASTLING_RIGHTS,
+                    7 => self.castling_rights |= WHITE_KINGSIDE_CASTLING_RIGHTS,
+                    56 => self.castling_rights |= BLACK_QUEENSIDE_CASTLING_RIGHTS,
+                    63 => self.castling_rights |= BLACK_KINGSIDE_CASTLING_RIGHTS,
                     _ => unreachable!()
                 }
                 
@@ -285,12 +296,12 @@ impl Board{
 
     }
 
-    pub fn update_castling_rights(&mut self, from:usize, to:usize) {
+    pub fn update_castling_rights(&mut self, from:usize, rook_from:usize) {
         if self.castling_rights == 0 {
             return;
         }
 
-        if let Some(Piece::King(color)) = self.squares[to] {
+        if let Some(Piece::King(color)) = self.squares[from] {
             match color {
                 Color::Black => self.castling_rights &= !BLACK_QUEENSIDE_CASTLING_RIGHTS
                 & !BLACK_KINGSIDE_CASTLING_RIGHTS, 
@@ -309,8 +320,8 @@ impl Board{
 
         };
 
-        check_rook_square(from);
-        check_rook_square(to);
+        check_rook_square(rook_from);
+
     }
 
 }
