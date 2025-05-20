@@ -19,6 +19,8 @@ fn main() {
 
     loop {
 
+        board.print_board();
+
         pseudo_legal_moves = generate_moves(&board);
         legal_moves = filter(&mut board, pseudo_legal_moves);
         sleep(time::Duration::from_millis(1000));
@@ -29,9 +31,8 @@ fn main() {
             board.fullmove_number += 1
         }
 
-        board.print_board();
-
         board.side_to_move = board.side_to_move.opposite();
+
     }
 
 }

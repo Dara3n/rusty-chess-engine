@@ -42,20 +42,27 @@ pub fn filter(board: &mut Board, moves: Vec<Move>) -> Vec<Move> {
             continue;
         
         }
+
         let undo_info = board.make_move(movement);
-
-        if movement.get_from() == old_king_position {
-            if !is_square_attacked(board, movement.get_to()) {
-                valid_moves.push(movement);
-            }
+        
+        // Update king position for the check test
+        let king_pos = if movement.get_from() == old_king_position {
+            movement.get_to()
         } else {
-            if !is_square_attacked(board, old_king_position) {
-                valid_moves.push(movement);
-            }
-        }
-
+            old_king_position
+        };
+        
+        // Check if the king is attacked after the move
+        let king_is_safe = !is_square_attacked(board, king_pos);
+        
+        // Unmake the move
         board.unmake_move(movement, undo_info);
+        
+        // Add the move to valid moves if the king is safe
+        if king_is_safe {
+            valid_moves.push(movement);
+        }
     }
-
+    
     valid_moves
 }

@@ -52,6 +52,8 @@ pub struct UndoInfo {
     pub castling_rights: u8,
     pub halfmove_clock: u32,
     pub special_info: SpecialInfo,
+    pub white_king: u16,
+    pub black_king: u16
 }
 
 
@@ -161,7 +163,9 @@ impl Board{
             en_passant_square: self.en_passant_square,
             castling_rights: self.castling_rights,
             halfmove_clock: self.halfmove_clock,
-            special_info: SpecialInfo::None
+            special_info: SpecialInfo::None,
+            white_king: self.white_king,
+            black_king: self.black_king
 
         };
 
@@ -170,7 +174,25 @@ impl Board{
         
         self.en_passant_square = None;
         
+        if let Some(Piece::King(color)) = self.squares[from]{
+            match color {
+                Color::White => self.white_king = m.get_to(),
+                Color::Black => self.black_king = m.get_to()
+            }
+        }
+
+        if let Some(piece) = self.squares[from] {
+            match piece {
+                Piece::King(_) => self.update_castling_rights(from, 0),
+                Piece::Rook(_) => self.update_castling_rights(0, from),
+                _ => {}
+            }
+        }
+        
         if m.is_capture() {
+            if let Some(Piece::Rook(_)) = self.squares[to] {
+                self.update_castling_rights(0, to);
+            }
             if m.is_en_passant() {
                 let captured_pawn_square = match self.side_to_move {
                     Color::White => to - 8,
@@ -263,6 +285,8 @@ impl Board{
         self.castling_rights = undo.castling_rights;
         self.en_passant_square = undo.en_passant_square;
         self.halfmove_clock = undo.halfmove_clock;
+        self.white_king = undo.white_king;
+        self.black_king = undo.black_king;
 
         match undo.special_info {
             SpecialInfo::EnPassant { en_passant_square } => {
@@ -275,14 +299,6 @@ impl Board{
                 self.squares[to] = None;
                 self.squares[rook_from as usize] = self.squares[rook_to as usize];
                 self.squares[rook_to as usize] = None;
-                match rook_from {
-                    0 => self.castling_rights |= WHITE_QUEENSIDE_CASTLING_RIGHTS,
-                    7 => self.castling_rights |= WHITE_KINGSIDE_CASTLING_RIGHTS,
-                    56 => self.castling_rights |= BLACK_QUEENSIDE_CASTLING_RIGHTS,
-                    63 => self.castling_rights |= BLACK_KINGSIDE_CASTLING_RIGHTS,
-                    _ => unreachable!()
-                }
-                
             }, 
             SpecialInfo::Promotion => {
                 self.squares[from] = Some(Piece::Pawn(self.side_to_move));
@@ -309,18 +325,14 @@ impl Board{
                 & !WHITE_KINGSIDE_CASTLING_RIGHTS,
             };
         }
-        let mut check_rook_square = |sq:usize| {
-            match sq {
-                0 => self.castling_rights &= !WHITE_QUEENSIDE_CASTLING_RIGHTS,
-                7 => self.castling_rights &= !WHITE_KINGSIDE_CASTLING_RIGHTS,
-                56 => self.castling_rights &= !BLACK_QUEENSIDE_CASTLING_RIGHTS,
-                63 => self.castling_rights &= !BLACK_KINGSIDE_CASTLING_RIGHTS,
-                _ => unreachable!()
-            }
 
-        };
-
-        check_rook_square(rook_from);
+        match rook_from {
+            0 => self.castling_rights &= !WHITE_QUEENSIDE_CASTLING_RIGHTS,
+            7 => self.castling_rights &= !WHITE_KINGSIDE_CASTLING_RIGHTS,
+            56 => self.castling_rights &= !BLACK_QUEENSIDE_CASTLING_RIGHTS,
+            63 => self.castling_rights &= !BLACK_KINGSIDE_CASTLING_RIGHTS,
+            _ => {}
+        }
 
     }
 

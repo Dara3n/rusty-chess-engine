@@ -348,24 +348,24 @@ fn generate_castles(board: &Board, from: u16, moves: &mut Vec<Move>) {
     if board.side_to_move == Color::White {
         if castling_rights & 0b1000 != 0 {
             let to:u16 = 6;
-            if board.squares[to as usize] == Some(Piece::Rook(board.side_to_move)) {
+            if board.squares[7] == Some(Piece::Rook(board.side_to_move)) {
                 moves.push(Move::castle_kingside(from, to));
             }
         } if castling_rights & 0b0100 != 0 {
             let to:u16 = 2;
-            if board.squares[to as usize] == Some(Piece::Rook(board.side_to_move)) {
+            if board.squares[0] == Some(Piece::Rook(board.side_to_move)) {
                 moves.push(Move::castle_queenside(from, to));
             }
         }
     } else {
         if castling_rights & 0b0010 != 0 {
             let to:u16 = 62;
-            if board.squares[to as usize] == Some(Piece::Rook(board.side_to_move)) {
+            if board.squares[63] == Some(Piece::Rook(board.side_to_move)) {
                 moves.push(Move::castle_kingside(from, to));
             }
         } if castling_rights & 0b0001 != 0 {
             let to:u16 = 58;
-            if board.squares[to as usize] == Some(Piece::Rook(board.side_to_move)) {
+            if board.squares[63] == Some(Piece::Rook(board.side_to_move)) {
                 moves.push(Move::castle_queenside(from, to));
             }
         }
