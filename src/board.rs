@@ -92,12 +92,11 @@ impl Board{
             black_king: 60, // initial squares of black and white kings
             white_king: 4,
         };
-        board.setup_initial_position();
         board
         
     }
 
-    fn setup_initial_position(&mut self){
+    pub fn setup_initial_position(&mut self){
         for i in 0..8 {
             self.squares[8 + i] = Some(Piece::Pawn(Color::White));
             self.squares[48 + i] = Some(Piece::Pawn(Color::Black));
@@ -127,6 +126,16 @@ impl Board{
 
     }
 
+    pub fn setup_test_position(&mut self) {
+        self.squares[0] = Some(Piece::Rook(Color::White));
+        self.squares[7] = Some(Piece::Rook(Color::White));
+        self.squares[56] = Some(Piece::Rook(Color::Black));
+        self.squares[63] = Some(Piece::Rook(Color::Black));
+
+        self.squares[4] = Some(Piece::King(Color::White));
+        self.squares[60] = Some(Piece::King(Color::Black));
+    }
+
     pub fn print_board(&self){
         println!("  +-----------------+");
         for rank in (0..8).rev(){
@@ -154,7 +163,7 @@ impl Board{
         if self.castling_rights & BLACK_QUEENSIDE_CASTLING_RIGHTS != 0 { print!("q"); }
         if self.castling_rights == 0 { print!("-"); }
         println!();
-        println!("Turn: {}", self.fullmove_number);
+        print!("Turn: {}", self.fullmove_number);
     }
 
     pub fn make_move(&mut self, m: Move) -> UndoInfo {
@@ -224,7 +233,7 @@ impl Board{
             } else {
                 (rook_from, rook_to) = match self.side_to_move {
                     Color::White => (0, 3),
-                    Color::Black => (57, 59),
+                    Color::Black => (56, 59),
                 };
                  
             }

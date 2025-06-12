@@ -201,19 +201,23 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
     let rank:u8 = from_u8/8;
     let file:u8= from_u8 %8; // probably will need to use this for en-passant? or we do that elsewere
 
-    let to: u8 = (from as i16 + direction) as u8;
-    if to < 64 && board.squares[to as usize].is_none() {
-        if rank as i16 == promote_rank - direction/8 {
-            for i in 0..4{
-                moves.push(Move::promotion(from, to as u16, i, false))
-            }
-        } else {
-            moves.push(Move::normal(from, to as u16));
-            
-            if rank == start_rank {
-                let double_to = from_u8 as i16 + 2 * direction;
-                if board.squares[double_to as usize].is_none() {
-                    moves.push(Move::normal(from, double_to as u16));
+    let to_i16: i16 = from as i16 + direction;
+
+    if to_i16 >= 0 && to_i16 < 64 {
+        let to = to_i16 as u8;
+        if board.squares[to as usize].is_none() {
+            if rank as i16 == promote_rank - direction/8 {
+                for i in 0..4{
+                    moves.push(Move::promotion(from, to as u16, i, false))
+                }
+            } else {
+                moves.push(Move::normal(from, to as u16));
+                
+                if rank == start_rank {
+                    let double_to = from_u8 as i16 + 2 * direction;
+                    if board.squares[double_to as usize].is_none() {
+                        moves.push(Move::normal(from, double_to as u16));
+                    }
                 }
             }
         }
@@ -365,7 +369,7 @@ fn generate_castles(board: &Board, from: u16, moves: &mut Vec<Move>) {
             }
         } if castling_rights & 0b0001 != 0 {
             let to:u16 = 58;
-            if board.squares[63] == Some(Piece::Rook(board.side_to_move)) {
+            if board.squares[56] == Some(Piece::Rook(board.side_to_move)) {
                 moves.push(Move::castle_queenside(from, to));
             }
         }
@@ -399,8 +403,8 @@ pub fn is_square_attacked(board: &Board, square: u16) -> bool {
     };
     
     for &(dx, dy) in &pawn_dirs {
-        let new_file = file + dx as i8;
-        let new_rank = rank + dy as i8;
+        let new_file = file - dx as i8;
+        let new_rank = rank - dy as i8;
         
         if new_file >= 0 && new_file < 8 && new_rank >= 0 && new_rank < 8 {
             let from_square = (new_rank * 8 + new_file) as usize;
