@@ -1,4 +1,5 @@
 use crate::movegen::Move;
+use crate::movegen;
 
 pub struct Board{
     pub squares: [Option<Piece>; 64],
@@ -29,6 +30,12 @@ impl Color {
         match self {
             Color::Black => Color::White,
             Color::White => Color::Black
+        }
+    }
+    pub fn to_string(self) -> String {
+        match self {
+            Color::Black => "Black".to_string(),
+            Color::White => "White".to_string()
         }
     }
 }
@@ -373,5 +380,20 @@ impl Board{
             _ => Err(format!("invalid piece character {}", ch)), 
         }
 
+    }
+
+    pub fn is_check(&self) -> bool {
+        let king_pos = match self.side_to_move {
+            Color::White => self.white_king,
+            Color::Black => self.black_king,
+        };
+        movegen::is_square_attacked(&self, king_pos)
+    }
+
+    pub fn is_checkmate(&self, n_of_moves: i16) -> bool {
+        if self.is_check() && n_of_moves == 0 {
+            return true;
+        }
+        return false;     
     }
 }

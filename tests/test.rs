@@ -1,4 +1,4 @@
-use chess_engine_rust::{board::{Board, Color}, movegen::generate_moves, movefilter::filter};
+use chess_engine_rust::{board::{Board, Color}, movegen::generate_moves};
 #[test]
 fn test_initial_position() {
     let board = Board::default(); 
@@ -32,8 +32,7 @@ fn test_fen() {
 fn test_movegen() {
     let mut board = Board::default();
 
-    let pseudo_legal_moves = generate_moves(&board);
-    let legal_moves = filter(&mut board, pseudo_legal_moves);
+    let legal_moves = generate_moves(&mut board);
 
     assert_eq!(legal_moves.len(), 20);
 
@@ -41,4 +40,44 @@ fn test_movegen() {
     board = Board::from_fen(fen).unwrap();
 
     assert_eq!(board.en_passant_square, Some(Board::string_to_square("d6").unwrap()));
+}
+
+#[test]
+fn test_check() {
+    let mut fen = "4k3/8/8/8/8/8/4R3/4K3 b - - 0 1";
+    let mut board = Board::from_fen(fen).unwrap();
+    assert!(board.is_check());
+
+    fen = "4K3/8/8/8/1B6/8/8/4k3 b - - 0 1";
+    board = Board::from_fen(fen).unwrap();
+    assert!(board.is_check());
+
+    fen = "4K3/8/8/8/8/5N2/8/4k3 b - - 0 1";
+    board = Board::from_fen(fen).unwrap();
+    assert!(board.is_check());
+
+    fen = "4K3/3p4/8/8/8/8/8/4k3 w - - 0 1";
+    board = Board::from_fen(fen).unwrap();
+    assert!(board.is_check());
+
+    fen = "8/8/8/8/8/4k3/4p3/4K3 w - - 0 1";
+    board = Board::from_fen(fen).unwrap();
+    assert!(!board.is_check());
+}
+
+#[test]
+fn test_checkmate() {
+    let mut fen = "4k2R/R7/8/8/8/8/8/4K3 b - - 0 1";
+    let mut board = Board::from_fen(fen).unwrap();
+    let moves = generate_moves(&mut board);
+    assert!(board.is_checkmate(moves.len() as i16));
+}
+
+#[test]
+fn test_stalemate() {
+    let mut fen = "7k/5Q2/8/8/8/8/8/7K b - - 0 1";
+    let mut board = Board::from_fen(fen).unwrap();
+    let moves = generate_moves(&mut board);
+    assert!(!board.is_checkmate(moves.len() as i16));
+    assert_eq!(moves.len(), 0);
 }
