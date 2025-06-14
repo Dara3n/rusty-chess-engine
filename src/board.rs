@@ -76,13 +76,13 @@ pub enum SpecialInfo{
 
 
 impl Board{
-    pub fn new() -> Self{
+    pub fn new() -> Self {
         let squares:[Option<Piece>; 64] = [None; 64]; 
         let castling_rights = 0b1111;
         let en_passant_square = None;
         let halfmove_clock = 0;
         let fullmove_number = 0;
-        let mut board = Board{
+        let board = Board{
             squares, 
             side_to_move: Color::White,
             castling_rights,
@@ -94,6 +94,13 @@ impl Board{
         };
         board
         
+    }
+
+    pub fn default() -> Self {
+        let mut board = Self::new();
+        board.setup_initial_position();
+        board
+
     }
 
     pub fn setup_initial_position(&mut self){
@@ -126,16 +133,6 @@ impl Board{
 
     }
 
-    pub fn setup_test_position(&mut self) {
-        self.squares[0] = Some(Piece::Rook(Color::White));
-        self.squares[7] = Some(Piece::Rook(Color::White));
-        self.squares[56] = Some(Piece::Rook(Color::Black));
-        self.squares[63] = Some(Piece::Rook(Color::Black));
-
-        self.squares[4] = Some(Piece::King(Color::White));
-        self.squares[60] = Some(Piece::King(Color::Black));
-    }
-
     pub fn print_board(&self){
         println!("  +-----------------+");
         for rank in (0..8).rev(){
@@ -145,7 +142,7 @@ impl Board{
                 let square = &self.squares[index];
 
                 match square {
-                    Some(piece) => print!("{} ", piece_to_char(piece)),
+                    Some(piece) => print!("{} ", Self::piece_to_char(piece)),
                     None=> print!(". "),
                 }
             }
@@ -345,28 +342,36 @@ impl Board{
 
     }
 
-}
-
-fn piece_to_char(piece: &Piece) -> char {
-    match piece {
-        Piece::Pawn(Color::White) => 'P',
-        Piece::Knight(Color::White) => 'N',
-        Piece::Bishop(Color::White) => 'B',
-        Piece::Rook(Color::White) => 'R',
-        Piece::Queen(Color::White) => 'Q',
-        Piece::King(Color::White) => 'K',
-        
-        Piece::Pawn(Color::Black) => 'p',
-        Piece::Knight(Color::Black) => 'n',
-        Piece::Bishop(Color::Black) => 'b',
-        Piece::Rook(Color::Black) => 'r',
-        Piece::Queen(Color::Black) => 'q',
-        Piece::King(Color::Black) => 'k',
+    pub fn piece_to_char(piece: &Piece) -> char {
+        match piece {
+            Piece::Pawn(Color::White) => 'P',
+            Piece::Knight(Color::White) => 'N',
+            Piece::Bishop(Color::White) => 'B',
+            Piece::Rook(Color::White) => 'R',
+            Piece::Queen(Color::White) => 'Q',
+            Piece::King(Color::White) => 'K',
+            
+            Piece::Pawn(Color::Black) => 'p',
+            Piece::Knight(Color::Black) => 'n',
+            Piece::Bishop(Color::Black) => 'b',
+            Piece::Rook(Color::Black) => 'r',
+            Piece::Queen(Color::Black) => 'q',
+            Piece::King(Color::Black) => 'k',
+        }
     }
-}
 
-pub fn init() -> Board {
-    let board = Board::new();
-    board.print_board();
-    board
+    pub fn char_to_piece(ch: char) -> Result<Piece, String> {
+        let color = if ch.is_uppercase() {Color::White } else {Color::Black };
+
+        match ch.to_ascii_lowercase() {
+            'p' => Ok(Piece::Pawn(color)),
+            'r' => Ok(Piece::Rook(color)),
+            'n' => Ok(Piece::Knight(color)),
+            'b' => Ok(Piece::Bishop(color)),
+            'q' => Ok(Piece::Queen(color)),
+            'k' => Ok(Piece::King(color)),
+            _ => Err(format!("invalid piece character {}", ch)), 
+        }
+
+    }
 }

@@ -1,2 +1,2 @@
 tests. Muchos tests
-moveparser
+moveparser (string_to_move)

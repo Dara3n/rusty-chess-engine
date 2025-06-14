@@ -2,9 +2,10 @@ use core::time;
 use std::thread::sleep;
 
 use board::Color;
+use board::Board;
 use movefilter::filter;
 use movegen::generate_moves;
-use rand::Rng;
+
 mod board;
 mod movegen;
 mod movefilter;
@@ -12,9 +13,7 @@ mod search;
 
 
 fn main() {
-    let mut rng = rand::rng();
-    let mut board = board::init(); 
-    board.setup_initial_position();
+    let mut board = Board::default();
     //board.setup_test_position();
     let mut pseudo_legal_moves = generate_moves(&board);
     let mut legal_moves = filter(&mut board, pseudo_legal_moves);

@@ -1,4 +1,3 @@
-use crate::board;
 use crate::board::Board;
 use crate::board::Color;
 use crate::board::Piece;
@@ -153,7 +152,12 @@ impl Move {
         format!("{}{}", (b'a' + file as u8) as char, rank) // a3, b7....
     }
 
+    
+    //pub fn string_to_move() 
+
 }
+
+
 pub fn generate_moves(board: &Board) -> Vec<Move> {
     let mut moves:Vec<Move> = Vec::new();
 
@@ -199,8 +203,6 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
     };
     let from_u8 = from as u8;
     let rank:u8 = from_u8/8;
-    let file:u8= from_u8 %8; // probably will need to use this for en-passant? or we do that elsewere
-
     let to_i16: i16 = from as i16 + direction;
 
     if to_i16 >= 0 && to_i16 < 64 {
