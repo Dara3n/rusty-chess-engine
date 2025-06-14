@@ -185,6 +185,8 @@ impl Board{
         let from = m.get_from() as usize;
         let to = m.get_to() as usize;
         
+        let moving_piece = self.squares[from];
+
         self.en_passant_square = None;
         
         if let Some(Piece::King(color)) = self.squares[from]{
@@ -250,7 +252,7 @@ impl Board{
             self.squares[to] = Some(Piece::King(self.side_to_move));
             self.squares[rook_from as usize] = None;
             self.squares[rook_to as usize] = Some(Piece::Rook(self.side_to_move));
-            
+            self.halfmove_clock = 0;
 
         } else {
             
@@ -275,7 +277,7 @@ impl Board{
             self.squares[to] = Some(promotion_piece);
             self.halfmove_clock = 0;
 
-        } else if self.squares[from] == Some(Piece::Pawn(self.side_to_move)) {
+        } else if moving_piece == Some(Piece::Pawn(self.side_to_move)) {
             if (from as i32 - to as i32).abs() == 16 {
                 let ep_square = match self.side_to_move {
                     Color::White => from + 8,
