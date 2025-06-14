@@ -17,13 +17,7 @@ fn main() {
 
     loop {
 
-        board.print_board();
-        println!("");
-
         legal_moves = generate_moves(&mut board);
-        print!("moves for {} = ", if board.side_to_move == Color::White {"White"} else {"Black"});
-        println!("{}", legal_moves.len());
-        println!("rule of 50 clock: {}", board.halfmove_clock);
         sleep(time::Duration::from_millis(1000));
         if let Some(movement) = search::get_random_element(&legal_moves) {
             board.make_move(movement);
@@ -38,8 +32,6 @@ fn main() {
                 break;
             }
         }
-
-        
         if board.side_to_move == Color::White {
             board.fullmove_number += 1
         }
@@ -50,6 +42,14 @@ fn main() {
         }
 
         board.side_to_move = board.side_to_move.opposite();
+
+        board.print_board();
+        println!();
+        print!("moves for {} = ", if board.side_to_move == Color::White {"White"} else {"Black"});
+        println!("{}", legal_moves.len());
+        println!("rule of 50 clock: {}", board.halfmove_clock);
+
+        
 
     }
 

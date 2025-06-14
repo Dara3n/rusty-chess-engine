@@ -14,6 +14,7 @@ use crate::board::WHITE_QUEENSIDE_CASTLING_RIGHTS;
 4- en passant target
 5- halfmove clock
 6- fullmove number
+as an example     let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; is the starting position
 */
 impl Board {
     pub fn from_fen(fen: &str) -> Result<Self, String> {
