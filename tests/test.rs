@@ -1,4 +1,4 @@
-use chess_engine_rust::{board::{Board, Color}, movegen::generate_moves};
+use chess_engine_rust::{board::{Board, Color}, eval, movegen::{generate_moves, Move}, search::minimax_best_move};
 #[test]
 fn test_initial_position() {
     let board = Board::default(); 
@@ -72,4 +72,19 @@ fn test_stalemate() {
     let moves = generate_moves(&mut board);
     assert_eq!(moves.len(), 0);
     assert!(!board.is_check());
+}
+
+
+#[test]
+pub fn simple_debug_test() {
+    let fen = "r3k3/8/8/8/Q7/8/8/4K3 b - - 0 1";
+    let board = Board::from_fen(fen).unwrap();
+    
+    println!("Position evaluation: {}", eval::eval(&board));
+    println!("Generated moves count: {}", generate_moves(&board).len());
+    
+    let best_move = minimax_best_move(&board, 4);
+    println!("Best move at depth 4: {:?}", best_move);
+
+    assert_eq!(eval::eval(&board), 900);
 }

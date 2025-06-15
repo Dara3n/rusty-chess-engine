@@ -14,7 +14,7 @@ fn main() {
 
     loop {
         sleep(time::Duration::from_millis(100));
-        let movement = search::minimax_best_move(&board, 3);
+        let movement = search::minimax_best_move(&board, 4);
         let mut movestring = String::new();
         if movement.is_some() {
             movestring = movement.unwrap().to_string(&board);

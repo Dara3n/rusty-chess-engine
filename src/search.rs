@@ -79,6 +79,7 @@ pub fn minimax_best_move(board: &Board, depth: u8) -> Option<Move> {
         }
     }
     
+    println!("{}", best_score);
     Some(best_move)
 }
 

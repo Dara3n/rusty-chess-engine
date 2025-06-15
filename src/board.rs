@@ -63,7 +63,6 @@ impl Piece {
             Piece::King(color) => *color,
         }
     }
-
 }
 #[derive(Clone, Copy)]
 pub struct UndoInfo {
