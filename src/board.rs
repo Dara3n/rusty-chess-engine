@@ -1,6 +1,7 @@
 use crate::movegen::Move;
 use crate::movegen;
 
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Board{
     pub squares: [Option<Piece>; 64],
     pub side_to_move: Color,
@@ -51,7 +52,19 @@ pub enum Piece{
     King(Color)
 }
 
+impl Piece {
+    pub fn color(&self) -> Color {
+        match self {
+            Piece::Pawn(color) => *color,
+            Piece::Knight(color) => *color,
+            Piece::Bishop(color) => *color,
+            Piece::Rook(color) => *color,
+            Piece::Queen(color) => *color,
+            Piece::King(color) => *color,
+        }
+    }
 
+}
 #[derive(Clone, Copy)]
 pub struct UndoInfo {
     pub captured_piece: Option<Piece>,
@@ -141,6 +154,7 @@ impl Board{
     }
 
     pub fn print_board(&self){
+        println!();
         println!("  +-----------------+");
         for rank in (0..8).rev(){
             print!("{} | ", rank + 1); 
@@ -167,7 +181,8 @@ impl Board{
         if self.castling_rights & BLACK_QUEENSIDE_CASTLING_RIGHTS != 0 { print!("q"); }
         if self.castling_rights == 0 { print!("-"); }
         println!();
-        print!("Turn: {}", self.fullmove_number);
+        println!("Turn: {}", self.fullmove_number);
+        println!("rule of 50 clock: {}", self.halfmove_clock);
     }
 
     pub fn make_move(&mut self, m: Move) -> UndoInfo {

@@ -1,3 +1,4 @@
+use crate::board;
 use crate::board::Board;
 use crate::board::Color;
 use crate::board::Piece;
@@ -37,7 +38,7 @@ pub struct Move {
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum MoveType {
+pub enum MoveType {
     Normal,
     Capture,
     EnPassant,
@@ -120,6 +121,7 @@ impl Move {
     pub fn is_castle(&self) -> bool {
         self.is_castle_kingside() || self.is_castle_queenside()
     }
+
     pub fn promotion_piece(&self) -> Option<u16> {
         if !self.is_promotion() {
             return None;
@@ -146,19 +148,103 @@ impl Move {
         }
     }
 
-    pub fn to_string(&self) -> String {
+    pub fn to_string(&self, board: &Board) -> String {
+        let from_rank:u16 = self.get_from() / 8 + 1;
+        let from_file:u16 = self.get_from() % 8;
+        let from:String = format!("{}{}", (b'a' + from_file as u8) as char, from_rank);
+
         let rank:u16 = self.get_to() / 8 + 1;
         let file:u16 = self.get_to() % 8;
-        format!("{}{}", (b'a' + file as u8) as char, rank) // a3, b7....
+        let to:String = format!("{}{}", (b'a' + file as u8) as char, rank);
+        
+        let moving_piece = Board::piece_to_char(&board.squares[self.get_from() as usize].unwrap()).to_ascii_uppercase();
+
+        
+        let piece_to_promote = match self.promotion_piece() {
+            Some(0) => Board::piece_to_char(&Piece::Queen(board.side_to_move)).to_ascii_uppercase().to_string(),
+            Some(1) => Board::piece_to_char(&Piece::Rook(board.side_to_move)).to_ascii_uppercase().to_string(),
+            Some(2) => Board::piece_to_char(&Piece::Bishop(board.side_to_move)).to_ascii_uppercase().to_string(),
+            Some(3) => Board::piece_to_char(&Piece::Knight(board.side_to_move)).to_ascii_uppercase().to_string(),
+            _ => String::new() 
+        }; 
+        
+        let disambiguation = self.disambiguation(&board);
+
+        let movestring = match self.get_move_type() {
+            MoveType::Capture | MoveType::EnPassant => {
+                if moving_piece == 'P' || moving_piece == 'p' {
+                    format!("{}x{}", (b'a' + from_file as u8) as char, to)
+                } else {
+                    format!("{}{}x{}", moving_piece, disambiguation, to)
+                }
+            }, 
+            MoveType::CastleKingside => "0-0".to_string(), 
+            MoveType::CastleQueenside => "0-0-0".to_string(),
+            MoveType::Promotion => format!("{}{}={}", moving_piece, to, piece_to_promote),
+            MoveType::PromotionCapture => format!("{}x{}={}", (b'a' + from_file as u8), to, piece_to_promote),
+            MoveType::Normal => {
+                if moving_piece == 'P' || moving_piece == 'p' {
+                    format!("{}", to)
+                } else {
+                    format!("{}{}{}", moving_piece, disambiguation, to)
+                }
+
+            },
+        };
+
+        movestring
     }
 
+    pub fn disambiguation(&self, mut board: &Board) -> String {
+        let from_rank:u16 = self.get_from() / 8 + 1;
+        let from_file:u16 = self.get_from() % 8;
+        let from:u16= self.get_from(); 
+        let to_square:u16 = self.get_to(); 
+        
+        let mut same_file = false;
+        let mut same_rank = false;
+        let mut needs_disambiguation = false;
+        let moving_piece = &board.squares[self.get_from() as usize].unwrap();
+
+        let legal_moves = generate_moves(&mut board);
+
+        for movement in legal_moves {
+            if movement.get_to() == to_square && movement.get_from() != from {
+                if let Some(piece) = board.squares[movement.get_from() as usize] {
+                    if Board::piece_to_char(&piece) == Board::piece_to_char(&moving_piece) {
+                        needs_disambiguation = true;
+                        let other_file = movement.get_from() % 8;
+                        let other_rank = movement.get_from() / 8;
+                        
+                        if other_file == from_file {
+                            same_file = true;
+                        }
+                        if other_rank == from_rank {
+                            same_rank = true;
+                        }
+
+                    }
+                }
+            }
+        }
+        if !needs_disambiguation {
+            return String::new();
+        }
+         if !same_file {
+            format!("{}", (b'a' + from_file as u8) as char)
+        } else if !same_rank {
+            format!("{}", from_rank + 1)
+        } else {
+            format!("{}{}", (b'a' + from_file as u8) as char, from_rank + 1)
+        }
+    }
     
     //pub fn string_to_move() 
 
 }
 
 
-pub fn generate_moves(board: &mut Board) -> Vec<Move> {
+pub fn generate_moves(board: &Board) -> Vec<Move> {
     let mut moves:Vec<Move> = Vec::new();
 
     generate_all_moves(board, &mut moves);
@@ -226,7 +312,7 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
 
     for capture_direction in [-1, 1] {
         let to = (from_u8 as i16 + direction + capture_direction) as u8;
-        if to > 63 {
+        if to > 63 || to / 8 == rank{
             continue;
         }
         if let Some(piece) = &board.squares[to as usize] {
@@ -480,56 +566,60 @@ pub fn is_square_attacked(board: &Board, square: u16) -> bool {
 }
 
 
-pub fn filter(board: &mut Board, moves: Vec<Move>) -> Vec<Move> {
-    //every move needs to keep the king safe (check from the king's position in every direction if it can "capture" an enemy piece with the moves of that enemy piece)
-    //castles also need to check if there aren't pieces between king and rook (if rook can move to it's place, the move should be in the moves vector)
-    //probably a good idea to get the king position somewhere, maybe as attribute of Board, and retur it in movegen::generate_king_moves()
-    //maybe this file is not needed, filter() can be a function of movegen, called before every moves.push(move)
+pub fn filter(board: &Board, moves: Vec<Move>) -> Vec<Move> {
 
     let mut valid_moves = Vec::with_capacity(moves.len());
     for movement in moves {
-        let old_king_position = match board.side_to_move {
-            Color::White => board.white_king,
-            Color::Black => board.black_king,
-        };
-
-        if movement.is_castle() {
-            if movement.is_castle_kingside() &&
-            !is_square_attacked(board, old_king_position) && 
-            !is_square_attacked(board, old_king_position + 1) &&
-            board.squares[(old_king_position + 1) as usize].is_none() &&
-            !is_square_attacked(board, old_king_position + 2) &&
-            board.squares[(old_king_position + 2) as usize].is_none() {
-                valid_moves.push(movement); // you castle if you have castling rights (checked in movegen) if the king is not attacked, if the two squares between king and rook are not attacked and empty
-            }
-                
-            if movement.is_castle_queenside() && 
-            !is_square_attacked(board, old_king_position) && 
-            !is_square_attacked(board, old_king_position - 1) &&
-            board.squares[(old_king_position - 1) as usize].is_none() &&
-            !is_square_attacked(board, old_king_position - 2) &&
-            board.squares[(old_king_position - 2) as usize].is_none() &&
-            !is_square_attacked(board, old_king_position - 3) && 
-            board.squares[(old_king_position - 3) as usize].is_none() {
-                valid_moves.push(movement);
-            }
-            continue;
-        
-        }
-
-        let undo_info = board.make_move(movement);
-        
-        // Check if the king is attacked after the move
-        let king_is_safe = !board.is_check();
-        
-        // Unmake the move
-        board.unmake_move(movement, undo_info);
-        
-        // Add the move to valid moves if the king is safe
-        if king_is_safe {
+        if is_valid_move(board, movement) {
             valid_moves.push(movement);
         }
     }
     
     valid_moves
+}
+
+
+pub fn is_valid_move(board: &Board, movement: Move) -> bool {
+    let mut new_board:Board = *board;
+
+    let old_king_position = match board.side_to_move {
+        Color::White => board.white_king,
+        Color::Black => board.black_king,
+    };
+
+    if movement.is_castle() {
+        if movement.is_castle_kingside() &&
+        !is_square_attacked(board, old_king_position) && 
+        !is_square_attacked(board, old_king_position + 1) &&
+        board.squares[(old_king_position + 1) as usize].is_none() &&
+        !is_square_attacked(board, old_king_position + 2) &&
+        board.squares[(old_king_position + 2) as usize].is_none() {
+            return true;
+        }
+            
+        if movement.is_castle_queenside() && 
+        !is_square_attacked(board, old_king_position) && 
+        !is_square_attacked(board, old_king_position - 1) &&
+        board.squares[(old_king_position - 1) as usize].is_none() &&
+        !is_square_attacked(board, old_king_position - 2) &&
+        board.squares[(old_king_position - 2) as usize].is_none() &&
+        !is_square_attacked(board, old_king_position - 3) && 
+        board.squares[(old_king_position - 3) as usize].is_none() {
+            return true;
+        }
+    
+        return false;
+    }
+
+    let undo_info = new_board.make_move(movement);
+    
+    // Check if the king is attacked after the move
+    let king_is_safe = !new_board.is_check();
+    
+    // Unmake the move
+    new_board.unmake_move(movement, undo_info);
+    if king_is_safe {
+        return true;
+    }
+    return false;
 }
