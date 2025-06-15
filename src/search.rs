@@ -5,7 +5,7 @@ use crate::eval;
 use crate::{board::Board, movegen::{Move, generate_moves}};
 
 
-pub fn get_random_element(vector: &Vec<Move>) -> Option<Move> {
+pub fn _get_random_element(vector: &Vec<Move>) -> Option<Move> {
     if vector.is_empty() {
         return None;
     }
@@ -17,7 +17,7 @@ pub fn get_random_element(vector: &Vec<Move>) -> Option<Move> {
 }
 
 
-pub fn minmax_depth_1(board: &Board, moves: &Vec<Move>) -> Option<Move> {
+pub fn _minmax_depth_1(board: &Board, moves: &Vec<Move>) -> Option<Move> {
     if moves.is_empty() {
         return None;
     }

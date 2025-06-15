@@ -66,18 +66,10 @@ fn test_check() {
 }
 
 #[test]
-fn test_checkmate() {
-    let mut fen = "4k2R/R7/8/8/8/8/8/4K3 b - - 0 1";
-    let mut board = Board::from_fen(fen).unwrap();
-    let moves = generate_moves(&mut board);
-    assert!(board.is_checkmate(moves.len() as i16));
-}
-
-#[test]
 fn test_stalemate() {
     let mut fen = "7k/5Q2/8/8/8/8/8/7K b - - 0 1";
     let mut board = Board::from_fen(fen).unwrap();
     let moves = generate_moves(&mut board);
-    assert!(!board.is_checkmate(moves.len() as i16));
     assert_eq!(moves.len(), 0);
+    assert!(!board.is_check());
 }

@@ -407,10 +407,4 @@ impl Board{
         movegen::is_square_attacked(&self, king_pos)
     }
 
-    pub fn is_checkmate(&self, n_of_moves: i16) -> bool {
-        if self.is_check() && n_of_moves == 0 {
-            return true;
-        }
-        return false;     
-    }
 }

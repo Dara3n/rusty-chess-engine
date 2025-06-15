@@ -149,9 +149,7 @@ impl Move {
     }
 
     pub fn to_string(&self, board: &Board) -> String {
-        let from_rank:u16 = self.get_from() / 8 + 1;
         let from_file:u16 = self.get_from() % 8;
-        let from:String = format!("{}{}", (b'a' + from_file as u8) as char, from_rank);
 
         let rank:u16 = self.get_to() / 8 + 1;
         let file:u16 = self.get_to() % 8;
