@@ -405,4 +405,18 @@ impl Board{
         movegen::is_square_attacked(&self, king_pos)
     }
 
+    pub fn str_to_square(coords: &str) -> Result<usize, String> {
+        let file_char = coords.chars().nth(0).unwrap();
+        let rank_char = coords.chars().nth(1).unwrap();
+        if !('a'..'h').contains(&file_char) || !('1'..'8').contains(&rank_char) {
+            return Err(format!("Invalid square: {}", coords));
+        }
+
+        let file_from = (file_char as u8 - b'a') as usize;
+        let rank_from = (rank_char as u8 - b'1') as usize;
+
+        let square = rank_from * 8 + file_from;
+        return Ok(square);
+    }
+
 }

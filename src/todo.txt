@@ -1,1 +1,3 @@
 moveparser (string_to_move)
+draw by insufficient material
+draw by 3 move rule

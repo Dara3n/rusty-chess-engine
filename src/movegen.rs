@@ -237,7 +237,46 @@ impl Move {
         }
     }
     
-    //pub fn string_to_move() 
+    pub fn string_to_move(input: &str, board: &Board) -> Result<Move, String> {
+        let input = input.trim().to_lowercase();
+
+        if input.len() != 4 && input.len() != 5 {
+            return Err("move length is not correct".to_string());
+        }
+
+        let origin = &input[..2];
+        let destination = &input[2..4];
+
+        let mut promo_piece:i16 = -1;
+
+        if input.len() == 5 {
+            promo_piece = match &input.chars().nth(4).unwrap() {
+                'q' => 0, 
+                'r' => 1,
+                'b' => 2,
+                'n' => 3, 
+                _ => return Err("invalid piece to promote to".to_string())
+            };
+        }
+
+        let square_from = Board::str_to_square(origin)?;
+        let square_to = Board::str_to_square(destination)?;
+
+        for movement in generate_moves(&board) {
+            if movement.get_from() == square_from as u16 && movement.get_to() == square_to as u16 {
+                if movement.is_promotion() {
+                    if movement.promotion_piece().unwrap() as i16 == promo_piece {
+                        return Ok(movement);
+                    } else {
+                        continue;
+                    }
+                }
+                return Ok(movement);
+            }
+        }
+
+        return Err("movement not found".to_string());
+    }
 
 }
 
