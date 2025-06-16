@@ -309,24 +309,24 @@ fn generate_one_pawn_moves(board: &Board, from: u16, moves: &mut Vec<Move>) {
     }
 
     for capture_direction in [-1, 1] {
-        let to = (from_u8 as i16 + direction + capture_direction) as u8;
-        if to > 63 || to / 8 == rank{
+        let capture_to = (to_i16 + capture_direction) as u8;
+        if capture_to > 63 || capture_to / 8 == rank || capture_to / 8 != to_i16 as u8 / 8{
             continue;
         }
-        if let Some(piece) = &board.squares[to as usize] {
+        if let Some(piece) = &board.squares[capture_to as usize] {
             if is_enemy(*piece, board.side_to_move) {
                 if rank as i16 == promote_rank - direction/8 {
                     for piece_type in 0..4 {
-                        moves.push(Move::promotion(from, to as u16, piece_type, true));
+                        moves.push(Move::promotion(from, capture_to as u16, piece_type, true));
                     }
                 } else {
-                    moves.push(Move::capture(from, to as u16));
+                    moves.push(Move::capture(from, capture_to as u16));
                 }
             }
         }
         if let Some(en_passant_square) = board.en_passant_square {
-            if to == en_passant_square {
-                moves.push(Move::en_passant_capture(from, to as u16));
+            if capture_to == en_passant_square {
+                moves.push(Move::en_passant_capture(from, capture_to as u16));
             }
         }
     }

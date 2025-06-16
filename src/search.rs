@@ -62,10 +62,10 @@ pub fn minimax_best_move(board: &Board, depth: u8) -> Option<Move> {
     let mut best_move = moves[0];
     let mut best_score = if maximizing { i32::MIN } else { i32::MAX };
     
-    for &move_candidate in &moves {
+    for move_candidate in moves {
         let mut board_copy = *board;
         board_copy.make_move(move_candidate);
-        let score = minimax(&board_copy, depth - 1, !maximizing);
+        let score = minimax(&board_copy, depth - 1, !maximizing, board.side_to_move.opposite());
         
         let is_better = if maximizing {
             score > best_score
@@ -83,15 +83,18 @@ pub fn minimax_best_move(board: &Board, depth: u8) -> Option<Move> {
     Some(best_move)
 }
 
-fn minimax(board: &Board, depth: u8, maximizing_player: bool) -> i32 {
+fn minimax(board: &Board, depth: u8, maximizing_player: bool, active_side: Color) -> i32 {
     if depth == 0 {
         return eval::eval(&board);
     }
 
-    let moves = generate_moves(&board);
+    let mut board_copy = *board;
+    board_copy.side_to_move = active_side;
+    let moves = generate_moves(&board_copy);
+
     if moves.is_empty() {
-        if board.is_check() {
-            return if maximizing_player { i32::MIN + depth as i32 } else { i32::MAX - depth as i32 };
+        if board_copy.is_check() {
+            return if active_side == Color::White { i32::MIN + depth as i32 } else { i32::MAX - depth as i32 };
         } else {
             //stalemate
             return 0;
@@ -104,10 +107,14 @@ fn minimax(board: &Board, depth: u8, maximizing_player: bool) -> i32 {
         i32::MAX
     };
 
-    for &move_candidate in &moves {
-        let mut board_copy = *board;
-        board_copy.make_move(move_candidate);
-        let eval_score = minimax(&board_copy, depth - 1, !maximizing_player);
+    for move_candidate in moves {
+        let mut board_for_move = board_copy;
+        
+        board_for_move.make_move(move_candidate);
+
+        let opposite_side = active_side.opposite(); 
+            
+        let eval_score = minimax(&board_for_move, depth - 1, !maximizing_player, opposite_side);
 
         best_score = if maximizing_player {
             best_score.max(eval_score)

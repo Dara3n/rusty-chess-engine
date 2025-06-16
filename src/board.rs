@@ -171,7 +171,7 @@ impl Board{
         println!("  +-----------------+");
         println!("    a b c d e f g h");
         
-        println!("Side to move: {}", if self.side_to_move == Color::White {"White"} else {"Black"});
+        println!("Side moving: {}", if self.side_to_move == Color::White {"White"} else {"Black"});
 
         print!("Castling rights: ");
         if self.castling_rights & WHITE_KINGSIDE_CASTLING_RIGHTS != 0 { print!("K"); }
@@ -304,7 +304,6 @@ impl Board{
             self.halfmove_clock += 1;
         }
 
-        // increase move counter and change side_to_move could be elsewhere?
         undo_info
     }
 
