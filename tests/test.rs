@@ -1,4 +1,6 @@
-use chess_engine_rust::{board::{Board, Color}, eval, movegen::{generate_moves, Move}, search::minimax_best_move};
+use std::fs::exists;
+
+use chess_engine_rust::{board::{self, Board, Color}, eval, movegen::{generate_moves, Move}, search::minimax_best_move};
 #[test]
 fn test_initial_position() {
     let board = Board::default(); 
@@ -40,6 +42,7 @@ fn test_movegen() {
     board = Board::from_fen(fen).unwrap();
 
     assert_eq!(board.en_passant_square, Some(Board::string_to_square("d6").unwrap()));
+
 }
 
 #[test]
@@ -72,4 +75,45 @@ fn test_stalemate() {
     let moves = generate_moves(&mut board);
     assert_eq!(moves.len(), 0);
     assert!(!board.is_check());
+}
+
+#[test]
+fn test_string_to_squre() {
+    let coords = "h2";
+    let square = Board::str_to_square(&coords);
+    if square.is_ok() {
+        assert_eq!(square, Ok(15));
+    }
+
+}
+
+#[test]
+fn test_string_to_move(){
+    let str_movement = "h2h4";
+    let mut board = Board::default();
+
+    let movement = Move::string_to_move(&str_movement, &board);
+
+    board.make_move(movement.unwrap());
+}
+
+#[test]
+fn test_h_moves(){
+    let mut board = Board::default();
+
+    let mut exist = false;
+    let moves = generate_moves(&mut board);
+    for movement in  moves {
+        if movement.get_from() == Board::str_to_square("h2").unwrap() as u16 {
+            board.make_move(movement);
+
+            exist = true;
+            break;
+        }
+        
+    }
+    assert!(exist);
+
+
+    
 }

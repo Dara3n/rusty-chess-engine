@@ -408,7 +408,7 @@ impl Board{
     pub fn str_to_square(coords: &str) -> Result<usize, String> {
         let file_char = coords.chars().nth(0).unwrap();
         let rank_char = coords.chars().nth(1).unwrap();
-        if !('a'..'h').contains(&file_char) || !('1'..'8').contains(&rank_char) {
+        if !('a'..='h').contains(&file_char) || !('1'..='8').contains(&rank_char) {
             return Err(format!("Invalid square: {}", coords));
         }
 
