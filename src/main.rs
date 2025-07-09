@@ -15,7 +15,7 @@ fn main() {
     let mut board = Board::default();
 
     board.print_board();
-    let player = Color::White;
+    let player = select_color();
 
     loop {
         if board.side_to_move == player {
@@ -69,4 +69,8 @@ fn main() {
         sleep(time::Duration::from_millis(100));
     }
 
+}
+
+pub fn select_color() -> Color {
+    Color::White
 }
